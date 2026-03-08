@@ -1,0 +1,27 @@
+{
+  "updated": "2026-03-08",
+  "session_count": 1,
+  "active": "tradesys-dashboard-v32",
+  "status": "ready",
+  "next": "Verifiera watchlist-rendering live efter kolumnfix. Testa bot auto-scan.",
+  "blocked": null,
+  "paused": null,
+  "last_completed": "BUG-002 (ind.d1.ema50), BUG-003 (kolumnmismatch 23→24), BUG-004 (rate-limit batch-fix)",
+  "dashboard_url": "https://tradesys1337.netlify.app",
+  "dashboard_version": "v32+",
+  "repo": "https://github.com/gustavkall/tradesys1337",
+  "regime_last_known": "RISK-OFF",
+  "vix_last_known": 35.67,
+  "vix_date": "2026-03-08",
+  "pending_tasks": [
+    "Verifiera GLDD 4H live-data",
+    "Testa bot auto-scan live",
+    "NOC som kandidat vid regimskifte (bipolar +3)",
+    "Regenerera Alpha Vantage API-nyckel",
+    "OMXS30/VSTOXX expansion"
+  ],
+  "known_issues": [
+    "ADX underestimerat 7-14 enheter (BUG-001, känd begränsning)",
+    "snap() returnerar null helgdagar (Polygon beteende)"
+  ]
+}
