@@ -1,23 +1,24 @@
 # TRADESYS
+Regelbaserat daytrading-system för amerikansk börs.
 
-Regelbaserat daytrading-system för amerikansk börs. Single-file HTML-applikation med Polygon.io integration.
-
-**Live dashboard**: https://tradesys1337.netlify.app
+**Live dashboard:** https://tradesys1337.netlify.app  
+**Repo:** https://github.com/gustavkall/tradesys1337
 
 ---
 
 ## FÖR CLAUDE — SESSION BOOT
 
-Kör alltid dessa 4 fetch vid sessionstart:
+Klistra in `AI_STARTPROMPT.md` i Claude Project Instructions.  
+Claude fetchar automatiskt rätt filer och är briefad på 10 sekunder.
 
+Boot-sekvens (5 filer):
 ```
-https://raw.githubusercontent.com/gustavkall/tradesys1337/main/context/GOVERNANCE.md
-https://raw.githubusercontent.com/gustavkall/tradesys1337/main/context/SYSTEM.md
-https://raw.githubusercontent.com/gustavkall/tradesys1337/main/context/TECH.md
-https://raw.githubusercontent.com/gustavkall/tradesys1337/main/context/STATE.json
+https://raw.githubusercontent.com/gustavkall/tradesys1337/main/governance/system_rules.md
+https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/current_state.md
+https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/work_queue.md
+https://raw.githubusercontent.com/gustavkall/tradesys1337/main/project_memory/architecture.md
+https://raw.githubusercontent.com/gustavkall/tradesys1337/main/project_memory/decisions.md
 ```
-
-Besvara sedan MINIMUM SESSION BOOT-frågorna från GOVERNANCE.md.
 
 ---
 
@@ -25,25 +26,53 @@ Besvara sedan MINIMUM SESSION BOOT-frågorna från GOVERNANCE.md.
 
 ```
 tradesys1337/
-├── index.html              ← Dashboard (senaste version)
-├── README.md               ← Detta dokument
-└── context/
-    ├── GOVERNANCE.md       ← Immutable operating rules
-    ├── SYSTEM.md           ← Trader-profil, API, metodologi
-    ├── TECH.md             ← Buggar, fixes, arkitektur
-    └── STATE.json          ← Aktuell work-state
+├── index.html                ← Dashboard (senaste version, deployas till Netlify)
+├── README.md                 ← Detta dokument
+├── AI_STARTPROMPT.md         ← Klistras in i Claude Project Instructions
+├── governance/
+│   └── system_rules.md       ← Immutable operating rules (ändras sällan)
+├── state/
+│   ├── current_state.md      ← Operationellt läge (uppdateras varje session)
+│   ├── work_queue.md         ← Prioriterad uppgiftslista
+│   └── session_handoff.md    ← Handoff-notering till nästa session
+└── project_memory/
+    ├── architecture.md       ← Teknisk arkitektur (uppdateras vid strukturförändringar)
+    └── decisions.md          ← Beslutlogg med motiveringar (kumulativ, aldrig raderas)
+```
+
+### Filernas syfte
+| Fil | Uppdateras | Av vem |
+|-----|-----------|--------|
+| governance/system_rules.md | Vid regeländring | Explicit beslut |
+| state/current_state.md | Varje session | Claude vid sessionslut |
+| state/work_queue.md | Varje session | Claude vid sessionslut |
+| state/session_handoff.md | Varje session | Claude vid sessionslut |
+| project_memory/architecture.md | Vid strukturförändring | Claude |
+| project_memory/decisions.md | Vid beslut | Claude (additivt) |
+| index.html | Vid dashboard-uppdatering | Claude → du pushar |
+
+---
+
+## DEPLOY-PIPELINE
+
+```
+Claude redigerar index.html
+→ JS syntax-verifieras (node vm.Script)
+→ Du laddar ned från Claude outputs
+→ Du pushar till GitHub main
+→ Netlify auto-deployas (~30 sek)
+→ Claude uppdaterar state/ och pushar
 ```
 
 ---
 
-## DEPLOY
+## API-TJÄNSTER
 
-GitHub → Netlify auto-deploy vid varje push till `main`.
+| Tjänst | Tier | Syfte |
+|--------|------|-------|
+| Polygon.io | Stocks Starter ($29/mån) | OHLCV, snapshots, indices |
+| Alpha Vantage | Free (25 req/dag) | Fundamentals: P/E, EPS, earnings |
+| Anthropic | API | Chart-analys via Vision |
+| TradingView | Premium | Manuell chartanalys (ej API-integrerat) |
 
-Uppdatera dashboard:
-1. Ersätt `index.html` i repo
-2. Push → Netlify deployas automatiskt (~30 sek)
-
-Uppdatera context-dokument:
-1. Redigera relevant fil i `context/`
-2. Push → gäller från nästa Claude-session
+**API-nycklar lagras i browser localStorage — aldrig i repot.**
