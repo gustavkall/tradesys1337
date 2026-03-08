@@ -120,6 +120,14 @@ td:nth-child(2){text-align:left;color:var(--muted);font-size:10px;}
 .spin{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .sbar{display:flex;align-items:center;gap:14px;padding:5px 20px;background:var(--bg);border-top:1px solid var(--border);position:fixed;bottom:0;left:0;right:0;font-size:10px;color:var(--muted);z-index:100;}
+.bot-notif{position:fixed;bottom:40px;right:20px;z-index:200;display:flex;flex-direction:column;gap:6px;max-width:320px;}
+.bot-notif-card{background:var(--bg3);border:1px solid var(--orange);border-radius:4px;padding:10px 14px;font-size:10px;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+.bot-notif-card.sell{border-color:var(--red);}
+.bot-notif-card.buy{border-color:var(--green);}
+.bot-timer-bar{height:2px;background:var(--orange);margin-top:6px;border-radius:1px;transition:width 1s linear;}
+.chart-drop{border:2px dashed var(--border);border-radius:4px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;}
+.chart-drop:hover,.chart-drop.drag{border-color:var(--accent);background:rgba(0,212,255,.03);}
+.chart-drop input{display:none;}
 .sdot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 ::-webkit-scrollbar{width:3px;}
@@ -158,17 +166,39 @@ td:nth-child(2){text-align:left;color:var(--muted);font-size:10px;}
   </div>
   <div class="hdr-r">
     <label style="font-size:10px;color:var(--muted);display:flex;align-items:center;gap:5px;"><input type="checkbox" id="ar" checked> AUTO 60s</label>
+    <label style="font-size:10px;color:var(--orange);display:flex;align-items:center;gap:5px;" title="Boten säljer automatiskt vid stop/T1. KÖP visas som notifiering i 30s."><input type="checkbox" id="bot-auto"> 🤖 BOT AUTO</label>
     <span id="ts" style="color:var(--muted);font-size:10px;">--</span>
     <button class="btn" id="rbtn" onclick="loadAll()">R REFRESH</button>
   </div>
 </div>
 <div class="apibar">
-  <label>API-NYCKEL:</label>
+  <label>POLYGON-NYCKEL:</label>
   <input type="text" id="apikey" />
   <button class="bsm" onclick="saveLoad()">SPARA &amp; LADDA</button>
   <span id="apist" style="font-size:10px;color:var(--muted);">--</span>
+  <span style="color:var(--border);margin:0 8px">|</span>
+  <label>ALPHA VANTAGE:</label>
+  <input type="password" id="av-keyinput" placeholder="Ange AV-nyckel..." style="width:160px;font-family:monospace"/>
+  <button class="bsm" onclick="saveAVKey()">SPARA</button>
+  <span id="av-key-status" style="font-size:10px;color:var(--muted);">--</span>
 </div>
 <div class="main">
+  <!-- VIX SPIKE BANNER — visas när VIX rör sig >10% på en dag -->
+  <div id="vix-spike-banner" style="display:none;background:rgba(255,61,87,.12);border-bottom:2px solid var(--red);padding:10px 20px;position:sticky;top:46px;z-index:99;display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:18px">⚠️</span>
+        <div>
+          <div id="vix-spike-title" style="font-weight:700;color:var(--red);font-size:12px;letter-spacing:.5px">VIX SPIKE — MACRO EVENT</div>
+          <div id="vix-spike-sub" style="font-size:10px;color:var(--text);margin-top:2px">Ingen ny trade. Befintliga positioner: utvärdera fundamenta, inte rörelsen.</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--muted)">FUNDAMENTA ÄNDRAS INTE AV MAKRO-BRUS</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">NVDA / MU / RTX / PWR / NOC — slår estimat, håll om stop ej nådd</div>
+      </div>
+    </div>
+  </div>
   <div class="sidebar">
     <div class="sh">VIX / VOLATILITET</div>
     <div id="vixEl"><div class="load"><div class="spin"></div></div></div>
@@ -186,6 +216,7 @@ td:nth-child(2){text-align:left;color:var(--muted);font-size:10px;}
       <div class="tab" onclick="swTab('se',this)">SEKTORER</div>
       <div class="tab" onclick="swTab('logg',this)">LOGG & EDGE</div>
       <div class="tab" onclick="swTab('bot',this)">🤖 SW-BOT</div>
+      <div class="tab" onclick="swTab('chart',this)">📊 CHART-ANALYS</div>
       <div class="tab" onclick="swTab('db',this)">DEBUG</div>
     </div>
     <div id="tc-wl" class="tc active">
@@ -317,9 +348,72 @@ td:nth-child(2){text-align:left;color:var(--muted);font-size:10px;}
         <div id="bot-history"><div style="color:var(--muted);font-size:10px;padding:8px">Ingen historik ännu.</div></div>
       </div>
     </div>
+    <div id="tc-chart" class="tc">
+      <div style="padding:16px 20px;max-width:900px">
+        <div class="sh" style="margin-bottom:4px">CHART-ANALYS — VERIFIERA MOT SYSTEMDATA</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:16px">Ladda upp en TradingView-skärmbild. Claude läser chartet och jämför med systemets API-data för samma ticker.</div>
+
+        <div style="background:rgba(255,165,0,.08);border:1px solid var(--orange);border-radius:3px;padding:8px 12px;margin-bottom:14px;font-size:10px;color:var(--orange)">
+          ⚠ Chart-analysen kräver en <strong>Anthropic API-nyckel</strong> (sk-ant-…), separat från Polygon-nyckeln.
+          <div style="margin-top:6px;display:flex;gap:8px;align-items:center">
+            <input type="password" id="ca-antkey" placeholder="sk-ant-api03-..." 
+              style="flex:1;background:var(--panel);border:1px solid var(--orange);color:var(--text);padding:5px 8px;font-size:10px;border-radius:3px;font-family:monospace"/>
+            <button onclick="caSaveKey()" style="background:var(--orange);color:#000;border:none;padding:5px 10px;font-size:10px;font-weight:700;border-radius:3px;cursor:pointer">SPARA</button>
+            <span id="ca-key-status" style="font-size:9px;color:var(--muted)"></span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div>
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:6px">TICKER (obligatorisk)</label>
+            <input type="text" id="ca-ticker" placeholder="ex. FANG" maxlength="10"
+              style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:12px;border-radius:3px;width:100%;text-transform:uppercase"/>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:6px">TIMEFRAME PÅ CHARTET</label>
+            <select id="ca-tf" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:11px;border-radius:3px;width:100%">
+              <option value="1D">1D (dagligt)</option>
+              <option value="4H">4H</option>
+              <option value="1H">1H</option>
+              <option value="15m">15m</option>
+              <option value="multi">Multi-TF (flera fönster)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="chart-drop" id="ca-drop" onclick="document.getElementById('ca-file').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="caHandleDrop(event)">
+          <input type="file" id="ca-file" accept="image/*" onchange="caHandleFile(this.files[0])"/>
+          <div id="ca-drop-label">
+            <div style="font-size:24px;margin-bottom:8px">📊</div>
+            <div style="font-size:11px;color:var(--muted)">Dra & släpp TradingView-skärmbild här</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px">eller klicka för att välja fil</div>
+          </div>
+        </div>
+
+        <div id="ca-preview" style="display:none;margin-top:12px">
+          <img id="ca-img" style="max-width:100%;border-radius:4px;border:1px solid var(--border)"/>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button onclick="caAnalyze()" id="ca-btn"
+              style="background:var(--accent);color:#000;border:none;padding:7px 18px;font-size:11px;font-weight:700;border-radius:3px;cursor:pointer">
+              🔍 ANALYSERA &amp; JÄMFÖR MED SYSTEMDATA
+            </button>
+            <button onclick="caClear()"
+              style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 12px;font-size:11px;border-radius:3px;cursor:pointer">
+              Rensa
+            </button>
+          </div>
+        </div>
+
+        <div id="ca-result" style="margin-top:16px"></div>
+      </div>
+    </div>
     <div id="tc-db" class="tc"><div style="padding:14px;"><div id="dblog" class="dbg">Ingen data...</div></div></div>
   </div>
 </div>
+<div id="bot-notif" class="bot-notif"></div>
 <div class="sbar">
   <div class="sdot" id="sdot"></div>
   <span id="stxt">Ange API-nyckel</span>
@@ -329,6 +423,8 @@ td:nth-child(2){text-align:left;color:var(--muted);font-size:10px;}
 <script>
 const BASE='https://api.massive.com';
 let KEY='xs3tq32EjvcQ9nYip5qfNBiu6erPuuVT';
+let AV_KEY=localStorage.getItem('tradesys_avkey')||'';
+let AV_CACHE={}; // {ticker: {data, ts}} — cache 24h to respect rate limits
 let REGIME='TRANSITION';
 let SPY_BARS=[];
 let dbLines=[];
@@ -496,6 +592,28 @@ function calcADX(bars,period=14){
   if(dx.length<period)return null;
   return Math.round(dx.slice(-period).reduce((a,b)=>a+b,0)/period*10)/10;
 }
+
+// calcADXFull — returns {adx, diPlus, diMinus} for directional scoring
+function calcADXFull(bars,period=14){
+  if(!bars||bars.length<period+2)return{adx:null,diPlus:null,diMinus:null};
+  const tr=[],pdm=[],ndm=[];
+  for(let i=1;i<bars.length;i++){
+    const h=bars[i].h,l=bars[i].l,pc=bars[i-1].c;
+    tr.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));
+    const up=h-bars[i-1].h,dn=bars[i-1].l-l;
+    pdm.push(up>dn&&up>0?up:0);ndm.push(dn>up&&dn>0?dn:0);
+  }
+  function ws(a,p){let s=a.slice(0,p).reduce((x,y)=>x+y,0);const o=[s];for(let i=p;i<a.length;i++)o.push(o[o.length-1]-o[o.length-1]/p+a[i]);return o;}
+  const sTR=ws(tr,period),sPDM=ws(pdm,period),sNDM=ws(ndm,period);
+  const dx=[];
+  for(let i=0;i<sTR.length;i++){if(!sTR[i])continue;const pi=100*sPDM[i]/sTR[i],ni=100*sNDM[i]/sTR[i],sm=pi+ni;if(!sm)continue;dx.push(100*Math.abs(pi-ni)/sm);}
+  if(dx.length<period)return{adx:null,diPlus:null,diMinus:null};
+  const adx=Math.round(dx.slice(-period).reduce((a,b)=>a+b,0)/period*10)/10;
+  const last=sTR.length-1;
+  const diPlus=sTR[last]?Math.round(100*sPDM[last]/sTR[last]*10)/10:null;
+  const diMinus=sTR[last]?Math.round(100*sNDM[last]/sTR[last]*10)/10:null;
+  return{adx,diPlus,diMinus};
+}
 function calcRelVol(bars,todayVol){
   if(!bars||bars.length<5||!todayVol)return null;
   const hist=bars.slice(-21,-1);
@@ -596,7 +714,10 @@ function calcATR(bars,period=14){
   for(let i=1;i<bars.length;i++){const h=bars[i].h,l=bars[i].l,pc=bars[i-1].c;trs.push(Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc)));}
   let atr=trs.slice(0,period).reduce((a,b)=>a+b,0)/period;
   for(let i=period;i<trs.length;i++) atr=(atr*(period-1)+trs[i])/period;
-  return atr;
+  // Sanity floor: ATR minimum 0.5% of current price (guards against adjusted-price scale issues)
+  const price=bars[bars.length-1].c;
+  const floor=price*0.005;
+  return Math.max(atr,floor);
 }
 // ---- DYNAMIC STOP ----
 function calcDynamicStop(bars,price,atr,type){
@@ -616,7 +737,7 @@ function calcTargets(bars,price,stop){
   for(let i=1;i<recent.length-1;i++){if(recent[i].h>recent[i-1].h&&recent[i].h>recent[i+1].h&&recent[i].h>price)swingHighs.push(recent[i].h);}
   let t1=swingHighs.length?Math.min(...swingHighs):null;
   // SW minimum T1 distance: 3% from price. If nearest swing high is too close, use next one or 3% floor
-  const minT1=price*1.03;
+  const minT1=price*1.02;
   if(t1&&t1<minT1){
     // Try next swing high above minT1
     const farHighs=swingHighs.filter(h=>h>=minT1);
@@ -651,11 +772,11 @@ function buildTradePlan(ind,manualStop){
 // ---- SINGLE TIMEFRAME SCORE (used for each TF) ----
 // Returns {score:0-3, trend, ema_stack, rsi_ok, adx_ok}
 function scoreTF(bars, label){
-  if(!bars||bars.length<15)return{score:0,trend:'no data',label,rsi:null,ema10:null,ema20:null,adx:null,emaOk:false,pullback:false,longTrendUp:false};
+  if(!bars||bars.length<15)return{score:0,trend:'no data',label,rsi:null,ema10:null,ema20:null,adx:null,diPlus:null,diMinus:null,emaOk:false,pullback:false,longTrendUp:false};
   const price=bars[bars.length-1].c;
   const ema10=calcEMA(bars,10),ema20=calcEMA(bars,20);
   const rsi=calcRSI(bars,14);
-  const adx=calcADX(bars,14);
+  const {adx,diPlus,diMinus}=calcADXFull(bars,14);
   const struct=calcStructure(bars);
   let score=0;
   // 1. EMA alignment: price > ema10 > ema20
@@ -663,9 +784,10 @@ function scoreTF(bars, label){
   if(emaOk)score++;
   // 2. Trend: uptrend OR pullback-in-uptrend both valid (pullback = SW buy zone)
   if(struct.trend==='uptrend'||struct.trend==='pullback')score++;
-  // 3. Momentum: RSI 45-75, ADX > 18 (wider to catch pullback entries)
-  if(rsi&&rsi>45&&rsi<75&&adx&&adx>18)score++;
-  return{score,label,price,ema10,ema20,rsi,adx,trend:struct.trend,emaOk,pullback:struct.pullback,longTrendUp:struct.longTrendUp};
+  // 3. Momentum: RSI 45-75, ADX > 18 AND DI+ > DI- (bullish direction required)
+  const diOk=diPlus!==null&&diMinus!==null?diPlus>diMinus:true; // if no DI data, don't penalize
+  if(rsi&&rsi>45&&rsi<75&&adx&&adx>18&&diOk)score++;
+  return{score,label,price,ema10,ema20,rsi,adx,diPlus,diMinus,trend:struct.trend,emaOk,pullback:struct.pullback,longTrendUp:struct.longTrendUp};
 }
 
 // ---- MULTI-TF ALIGNMENT ----
@@ -735,10 +857,17 @@ function calcSetupScore(price,d1,h4,h1,relVol,rs5,ema50,pearsonR){
   else if(d1.trend==='pullback'&&d1.longTrendUp){reasons.push(' 0 EMA bruten men long trend upp (pullback)');}
   else{score--;reasons.push('-1 EMA-stack bruten');}
 
-  // [3] 4H TREND (+1/-1)
+  // [3] 4H TREND (+1/-1) — inkluderar DI-riktning
   if(h4.score>=2){score++;reasons.push('+1 4H bekraftar upptrend');}
   else if(h4.score===1){reasons.push(' 0 4H delvis OK (pullback pa 4H)');}
   else{score--;reasons.push('-1 4H bruten');}
+
+  // [3b] ADX RIKTNING — DI+ vs DI- på 4H (+1/-1/0)
+  if(h4.diPlus!==null&&h4.diMinus!==null){
+    if(h4.diPlus>h4.diMinus&&h4.adx>20){score++;reasons.push('+1 DI+ '+f(h4.diPlus,0)+'>DI- '+f(h4.diMinus,0)+' ADX '+f(h4.adx,0)+' (bullish)');}
+    else if(h4.diMinus>h4.diPlus&&h4.adx>20){score--;reasons.push('-1 DI- '+f(h4.diMinus,0)+'>DI+ '+f(h4.diPlus,0)+' ADX '+f(h4.adx,0)+' (bearish nedtrend)');}
+    else{reasons.push(' 0 DI+/DI- neutral eller ADX svag');}
+  }else{reasons.push(' 0 DI-riktning n/a');}
 
   // [4] RELATIV STYRKA vs SPY 5d (+1/-1)
   if(rs5!==null&&rs5>1.0){score++;reasons.push('+1 RS5 +'+f(rs5,1)+'% -- leder SPY');}
@@ -768,7 +897,7 @@ function calcSetupScore(price,d1,h4,h1,relVol,rs5,ema50,pearsonR){
   const adjustedScore=score+edgeAdj;
   if(edgeAdj!==0) reasons.push((edgeAdj>0?'+':'')+edgeAdj+' Edge-justering (historisk WR for '+tfType+')');
 
-  return{score,adjustedScore:Math.round(adjustedScore*10)/10,reasons,max:7};
+  return{score,adjustedScore:Math.round(adjustedScore*10)/10,reasons,max:8};
 }
 
 // ---- ENTRY ZONE CHECK ----
@@ -863,8 +992,8 @@ function buildSignal(tfResult,d1score,setupScore,price,stop,t1,entry,vwap,h1scor
 // ---- MAIN INDICATOR FETCHER ----
 async function getInd(t){
   const [bars1d, bars4h, bars1h, minBars, sn]=await Promise.all([
-    getBars(t,1,'day',90,120),
-    getBars(t,4,'hour',150,80),
+    getBars(t,1,'day',200,120),
+    getBars(t,4,'hour',200,100),
     getBars(t,1,'hour',120,20),
     getMinuteBars(t,390),
     snap(t),
@@ -955,9 +1084,31 @@ async function loadVIX(){
   const el=document.getElementById('vixEl');
   const vix=await getVIX();
   const vl=vix&&vix.price;
+  const vchg=vix&&vix.chgPct;
   const sig=vl?(vl<15?'LAVT - Risk-on':vl<20?'NORMALT':vl<25?'FORHOJT':vl<30?'HOGT - Risk-off':'EXTREMT'):'--';
   const vc=vl?(vl<20?'var(--green)':vl<25?'var(--orange)':'var(--red)'):'var(--muted)';
-  el.innerHTML='<div class="vix-box"><div class="vix-card"><div class="vix-label">VIX</div><div class="vix-val" style="color:'+vc+'">'+f(vl,2)+'</div><div style="font-size:10px;margin-top:2px">'+fc(vix&&vix.chgPct)+'</div></div><div class="vix-card"><div class="vix-label">SIGNAL</div><div style="font-size:10px;color:'+vc+';margin-top:4px;font-weight:600">'+sig+'</div><div style="font-size:9px;color:var(--muted);margin-top:2px">'+(vix&&vix.src||'--')+'</div></div></div>';
+
+  // VIX SPIKE DETECTION — trigger banner when daily move >10%
+  const spikeEl=document.getElementById('vix-spike-banner');
+  if(spikeEl && vchg && Math.abs(vchg)>10){
+    const dir=vchg>0?'STIGER':'FALLER';
+    const icon=vchg>0?'⚠️':'✅';
+    document.getElementById('vix-spike-title').textContent=icon+' VIX '+dir+' '+f(Math.abs(vchg),1)+'% IDAG — MACRO EVENT DETEKTERAT';
+    if(vchg>0){
+      document.getElementById('vix-spike-sub').textContent='INGEN NY TRADE. Befintliga positioner: utvärdera fundamenta — inte rörelsen. Makro-brus ≠ earnings-revision.';
+      spikeEl.style.background='rgba(255,61,87,.12)';
+      spikeEl.style.borderBottomColor='var(--red)';
+    } else {
+      document.getElementById('vix-spike-sub').textContent='VIX komprimerar kraftigt — potentiellt Risk-On skifte. Bevaka regime-bekräftelse.';
+      spikeEl.style.background='rgba(0,200,120,.08)';
+      spikeEl.style.borderBottomColor='var(--green)';
+    }
+    spikeEl.style.display='block';
+  } else if(spikeEl){
+    spikeEl.style.display='none';
+  }
+
+  el.innerHTML='<div class="vix-box"><div class="vix-card"><div class="vix-label">VIX</div><div class="vix-val" style="color:'+vc+'">'+f(vl,2)+'</div><div style="font-size:10px;margin-top:2px">'+fc(vchg)+(vchg&&Math.abs(vchg)>10?'<span style="color:var(--red);margin-left:4px;font-weight:700">SPIKE</span>':'')+'</div></div><div class="vix-card"><div class="vix-label">SIGNAL</div><div style="font-size:10px;color:'+vc+';margin-top:4px;font-weight:600">'+sig+'</div><div style="font-size:9px;color:var(--muted);margin-top:2px">'+(vix&&vix.src||'--')+'</div></div></div>';
 }
 
 // ---- REGIME ----
@@ -1091,16 +1242,18 @@ function buildWLRow(item,ind,idx){
     +'<td><span class="rec rec-'+rec+'">'+recLbl(rec)+'</span></td>'
     +'<td class="signal-cell">'+sigHtml+'</td>'
     +'<td>'+noteHtml(item.t)+'</td>'
+    +'<td><button title="Fundamental data (AV)" onclick="toggleFundRow(\''+item.t+'\')" style="font-size:9px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:1px 5px;border-radius:2px;cursor:pointer">📊</button></td>'
     +'<td><button class="del-btn" onclick="delWL('+idx+')">x</button></td>'
-    +'</tr>';
+    +'</tr>'
+    +'<tr id="fund-row-'+item.t+'" style="display:none"><td colspan="24" style="padding:0 12px 8px 32px"><div id="fund-card-'+item.t+'"><span style="color:var(--muted);font-size:9px">Laddar fundamentals...</span></div></td></tr>';
 }
 
 async function loadWatchlist(){
   const el=document.getElementById('wl-tbl');
-  const thead='<thead><tr>'+['TICKER','BOLAG','PRIS','CHG%','GAP','TF 1D/4H/1H','VWAP','EMA10','EMA20','EMA50','RSI','ADX','REL.VOL','RS5','PEARSON R','STOPP','ENTRY','T1','RR','SIGNAL','ANALYS','NOTERING',''].map(h=>'<th>'+h+'</th>').join('')+'</tr></thead>';
-  el.innerHTML='<table>'+thead+'<tbody id="wl-tbody"><tr><td colspan="22" style="color:var(--muted);padding:16px">Laddar '+WL.length+' tickers...</td></tr></tbody></table>';
+  const thead='<thead><tr>'+['TICKER','BOLAG','PRIS','CHG%','GAP','TF 1D/4H/1H','VWAP','EMA10','EMA20','EMA50','RSI','ADX','REL.VOL','RS5','PEARSON R','STOPP','ENTRY','T1','RR','SIGNAL','ANALYS','NOTERING','📊',''].map(h=>'<th>'+h+'</th>').join('')+'</tr></thead>';
+  el.innerHTML='<table>'+thead+'<tbody id="wl-tbody"><tr><td colspan="24" style="color:var(--muted);padding:16px">Laddar '+WL.length+' tickers...</td></tr></tbody></table>';
   const tbody=document.getElementById('wl-tbody');
-  const BATCH=8;
+  const BATCH=3;
   const allRows=[];
   for(let i=0;i<WL.length;i+=BATCH){
     const batch=WL.slice(i,i+BATCH);
@@ -1116,14 +1269,20 @@ async function loadWatchlist(){
     // Render what we have so far
     tbody.innerHTML=allRows.map(({item,ind,idx})=>{
       try{return buildWLRow(item,ind,idx);}
-      catch(e){return'<tr><td>'+item.t+'</td><td colspan="21" style="color:var(--red);font-size:10px">'+e.message+'</td></tr>';}
+      catch(e){
+        dbg('RENDER ERR '+item.t+': '+e.message+' @ '+e.stack.split('\n')[1]);
+        return'<tr><td style="color:var(--warn);font-weight:700">'+item.t+'</td><td colspan="23" style="color:var(--red);font-size:10px">RENDER FEL: '+e.message+'</td></tr>';
+      }
     }).join('');
     if(i+BATCH<WL.length){
       const remaining=WL.length-(i+BATCH);
-      tbody.innerHTML+='<tr><td colspan="22" style="color:var(--muted);padding:8px;font-size:10px">Laddar '+remaining+' kvar...</td></tr>';
+      tbody.innerHTML+='<tr><td colspan="24" style="color:var(--muted);padding:8px;font-size:10px">Laddar '+remaining+' kvar...</td></tr>';
+      await new Promise(r=>setTimeout(r,400));
     }
   }
   attachSort();applyActiveFilters('wl');
+  // Show mini-diag in footer
+  setS('WL klar — '+WL.length+' tickers. Kolla DEBUG för bar-counts per ticker.',true);
 }
 
 function buildPFRow(item,ind,idx){
@@ -1193,6 +1352,7 @@ function buildPFRow(item,ind,idx){
     +'<td><span class="'+(ind.vwap&&price?(price>ind.vwap?'vwap-above':'vwap-below'):'vwap-neu')+'">'+(ind.vwap&&price?(price>ind.vwap?'OVER':'UNDER'):'--')+'</span></td>'
     +'<td>'+cvr(price,ind.d1.ema10)+'</td>'
     +'<td>'+cvr(price,ind.d1.ema20)+'</td>'
+    +'<td>'+cvr(price,ind.ema50)+'</td>'
     +'<td><span class="'+(ind.d1.rsi>70?'neg':ind.d1.rsi>50?'pos':'neu')+'">'+f(ind.d1.rsi,1)+'</span></td>'
     +'<td><span class="'+(ind.d1.adx>25?'adxs':'adxw')+'">'+f(ind.d1.adx,1)+'</span></td>'
     +'<td><span class="'+rsc+'">'+(ind.rs5!==null?(ind.rs5>0?'+':'')+f(ind.rs5,1)+'%':'--')+'</span></td>'
@@ -1205,8 +1365,10 @@ function buildPFRow(item,ind,idx){
     +'<td><span class="rec '+pfRecClass+'">'+pfRec+'</span></td>'
     +'<td class="signal-cell">'+sigHtml+'</td>'
     +'<td>'+noteHtml(item.t+'_pf')+'</td>'
+    +'<td><button title="Fundamental data (AV)" onclick="toggleFundRow(\''+item.t+'\')" style="font-size:9px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:1px 5px;border-radius:2px;cursor:pointer">📊</button></td>'
     +'<td><button class="del-btn" onclick="delPF('+idx+')">x</button></td>'
-    +'</tr>';
+    +'</tr>'
+    +'<tr id="fund-row-'+item.t+'" style="display:none"><td colspan="24" style="padding:0 12px 8px 32px"><div id="fund-card-'+item.t+'"><span style="color:var(--muted);font-size:9px">Laddar fundamentals...</span></div></td></tr>';
 }
 
 async function loadPortfolio(){
@@ -1699,15 +1861,16 @@ async function botRun(){
     if(isDT){
       // DT: close everything EOD (simulated — on next scan after open)
       // Plus: stop or T1 hit intraday (best-effort with delayed data)
-      if(price<=pos.stop) exitReason='DT STOP ('+f(price)+')';
+      if(price<=pos.stop&&!pos.fundamentalHold) exitReason='DT STOP ('+f(price)+')';
       else if(pos.t1&&price>=pos.t1) exitReason='DT T1 nått ('+f(price)+')';
-      else if(pos.entryDate!==today) exitReason='DT EOD stängning ('+pos.entryDate+')';
+      else if(pos.entryDate!==today&&!pos.fundamentalHold) exitReason='DT EOD stängning ('+pos.entryDate+')';
     } else {
-      // SW exits
-      if(price<=pos.stop) exitReason='STOP truffad ('+f(price)+')';
+      // SW exits — Fundamental Hold skyddar mot macro-brus men EJ mot T1
+      if(price<=pos.stop&&!pos.fundamentalHold) exitReason='STOP truffad ('+f(price)+')';
+      else if(pos.stop&&price<=pos.stop*0.95&&pos.fundamentalHold) exitReason='STOP -5% under nivå — override F.Hold ('+f(price)+')'; // hard floor even with F.Hold
       else if(pos.t1&&price>=pos.t1) exitReason='T1 nått ('+f(price)+')';
-      else if(effScore<0) exitReason='Score negativt ('+effScore+')';
-      else if(REGIME==='RISK-OFF'){
+      else if(effScore<0&&!pos.fundamentalHold) exitReason='Score negativt ('+effScore+')';
+      else if(REGIME==='RISK-OFF'&&!pos.fundamentalHold){
         const pl=(price-pos.entry)/pos.entry*100;
         if(pl<-5) exitReason='RISK-OFF + förlust '+f(pl,1)+'%';
       }
@@ -1818,22 +1981,26 @@ function botRenderAll(prices){
         +(isDT?'<br><span style="color:var(--orange)">DT: positioner stängs EOD automatiskt.</span>':'')+'</div>';
     } else {
       posEl.innerHTML='<table style="width:100%;font-size:10px;border-collapse:collapse">'
-        +'<thead><tr>'+['TICKER','ENTRY','NU','P/L%','STOP','T1','AKTIER','SCORE','DATUM',''].map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'
+        +'<thead><tr>'+['TICKER','ENTRY','NU','P/L%','STOP','T1','AKTIER','SCORE','DATUM','F.HOLD',''].map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'
         +posArr.map(([t,pos])=>{
           const cur=prices[t]||pos.entry;
           const pl=Math.round((cur-pos.entry)/pos.entry*1000)/10;
           const atStop=cur<=pos.stop*1.02;
-          return'<tr style="'+(atStop?'background:rgba(255,61,87,.07)':'')+'"><td style="font-weight:700;color:var(--accent)">'+t+'</td>'
+          const fhold=pos.fundamentalHold||false;
+          const fholdStyle=fhold?'background:rgba(0,200,120,.15);border:1px solid var(--green);color:var(--green);':'background:transparent;border:1px solid var(--border);color:var(--muted);';
+          return'<tr style="'+(atStop&&!fhold?'background:rgba(255,61,87,.07)':fhold?'background:rgba(0,200,120,.04)':'')+'"><td style="font-weight:700;color:var(--accent)">'+t+'</td>'
             +'<td>'+f(pos.entry)+'</td><td>'+f(cur)+'</td>'
             +'<td><span class="'+(pl>=0?'pos':'neg')+'">'+(pl>0?'+':'')+pl+'%</span></td>'
-            +'<td class="neg">'+f(pos.stop)+'</td>'
+            +'<td class="'+(fhold?'':'neg')+'">'+f(pos.stop)+(fhold?'<span style="color:var(--green);margin-left:3px" title="Fundamental Hold — stop pausat vid macro spike">🔒</span>':'')+'</td>'
             +'<td class="pos">'+(pos.t1?f(pos.t1):'--')+'</td>'
             +'<td>'+pos.shares+'</td>'
             +'<td><span class="setup-score '+ssClass(Math.round(pos.score))+'">'+pos.score+'</span></td>'
             +'<td style="color:var(--muted);font-size:9px">'+pos.entryDate+(isDT&&pos.entryDate!==new Date().toISOString().split('T')[0]?'<span style="color:var(--orange)"> stängs</span>':'')+'</td>'
+            +'<td><button onclick="toggleFundHold(\''+t+'\')" title="'+(fhold?'Fundamental Hold AV — återaktivera stop':'Fundamental Hold PÅ — håll igenom macro-brus')+'" style="font-size:9px;padding:2px 6px;border-radius:2px;cursor:pointer;'+fholdStyle+'">'+(fhold?'✅ PÅ':'⬜ AV')+'</button></td>'
             +'<td><button onclick="botManualExit(\''+t+'\')" style="font-size:9px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:1px 5px;border-radius:2px;cursor:pointer">✕</button></td>'
             +'</tr>';
-        }).join('')+'</tbody></table>';
+        }).join('')+'</tbody></table>'
+        +(posArr.some(([,p])=>p.fundamentalHold)?'<div style="margin-top:8px;padding:6px 10px;background:rgba(0,200,120,.08);border:1px solid rgba(0,200,120,.3);border-radius:3px;font-size:9px;color:var(--green)">🔒 FUNDAMENTAL HOLD aktivt — auto-stop pausat för markerade positioner. Manuell exit fortfarande möjlig. Fundamenta ändras inte av macro-brus.</div>':'');
     }
   }
 
@@ -1889,6 +2056,34 @@ function botRenderAll(prices){
   }
 }
 
+async function toggleFundRow(ticker){
+  const row=document.getElementById('fund-row-'+ticker);
+  const card=document.getElementById('fund-card-'+ticker);
+  if(!row) return;
+  if(row.style.display==='none'||row.style.display===''){
+    row.style.display='table-row';
+    if(!AV_KEY){
+      card.innerHTML='<div style="color:var(--orange);font-size:10px;padding:4px">⚠ Ange Alpha Vantage-nyckel i API-fältet ovan.</div>';
+      return;
+    }
+    card.innerHTML='<div style="color:var(--muted);font-size:9px;padding:4px">⏳ Hämtar från Alpha Vantage...</div>';
+    const fund=await getAVFundamentals(ticker);
+    card.innerHTML=renderFundCard(ticker,fund);
+  } else {
+    row.style.display='none';
+  }
+}
+
+function toggleFundHold(ticker){
+  const b=getBot();
+  if(!b.positions[ticker]) return;
+  b.positions[ticker].fundamentalHold=!b.positions[ticker].fundamentalHold;
+  const state=b.positions[ticker].fundamentalHold;
+  saveBot(b);
+  renderBot();
+  notify('🔒 '+ticker+' Fundamental Hold '+(state?'PÅ — stop pausat, håller igenom macro-brus':'AV — stop aktivt igen'), state?'var(--green)':'var(--orange)');
+}
+
 function botManualExit(ticker){
   botLoad();
   const b=botActive();
@@ -1923,6 +2118,10 @@ async function loadAll(){
     }
     await Promise.all([loadVIX(),loadMacro()]);
     await Promise.all([loadRelative(),loadWatchlist(),loadPortfolio(),loadSectors()]);
+    // BOT AUTO-SCAN: kör efter varje refresh om togglen är på
+    if(document.getElementById('bot-auto')&&document.getElementById('bot-auto').checked){
+      botAutoScan();
+    }
     setS('Uppdaterad '+new Date().toLocaleTimeString('sv-SE')+' - 15-min delay');
     document.getElementById('apist').textContent='OK';
     document.getElementById('apist').style.color='var(--green)';
@@ -1941,6 +2140,446 @@ function saveLoad(){
   document.getElementById('apist').style.color='var(--green)';
   loadAll();
 }
+// ================================================================
+// BOT AUTO-SCAN — körs efter varje 60s refresh
+// SÄLJ: automatiskt (stop/T1). KÖP: visas som notifiering 30s.
+// ================================================================
+let BOT_PENDING=[]; // pending buy confirmations
+
+async function botAutoScan(){
+  botLoad();
+  const results=[];
+  const prices={};
+  const allTickers=[...Object.keys(BOT.positions),...Object.keys(BOT_DT.positions),...WL.map(w=>w.t)];
+  const unique=[...new Set(allTickers)];
+
+  for(const t of unique){
+    try{
+      const ind=await getInd(t);
+      if(!ind.price)continue;
+      prices[t]=ind.price;
+      const wlItem=WL.find(w=>w.t===t)||{t,n:t,stop:0,up:0};
+      const plan=buildTradePlan(ind,wlItem.stop);
+      const effScore=ind.setup.adjustedScore!==undefined?ind.setup.adjustedScore:ind.setup.score;
+      results.push({t,ind,plan,effScore,price:ind.price,name:wlItem.n||t});
+    }catch(e){}
+  }
+
+  const today=new Date().toISOString().split('T')[0];
+
+  // Process both SW and DT bots
+  ['sw','dt'].forEach(mode=>{
+    const b=mode==='sw'?BOT:BOT_DT;
+    const isDT=mode==='dt';
+
+    // AUTO-EXITS (no confirmation needed)
+    Object.entries(b.positions).forEach(([t,pos])=>{
+      const r=results.find(x=>x.t===t);
+      if(!r)return;
+      const price=r.price;
+      let exitReason=null;
+      if(price<=pos.stop) exitReason='⛔ STOP truffad @ '+f(price);
+      else if(pos.t1&&price>=pos.t1) exitReason='🎯 T1 nått @ '+f(price);
+      else if(isDT&&pos.entryDate!==today) exitReason='🕐 DT EOD stängning';
+      else if(!isDT&&r.effScore<0) exitReason='📉 Score negativt';
+      if(exitReason){
+        const pnl=(price-pos.entry)*pos.shares;
+        b.history.unshift({t,entry:pos.entry,exit:price,shares:pos.shares,
+          pnl:Math.round(pnl),pnlPct:Math.round((price-pos.entry)/pos.entry*1000)/10,
+          entryDate:pos.entryDate,exitDate:today,reason:exitReason,score:pos.score,mode});
+        b.cash+=price*pos.shares;
+        delete b.positions[t];
+        botNotify('sell','['+mode.toUpperCase()+'] SÄLJER '+t,'@ '+f(price)+' | '+exitReason+'<br>PNL: '+(pnl>0?'+':'')+Math.round(pnl).toLocaleString('sv-SE')+' kr');
+        const key=mode==='sw'?BOT_KEY:BOT_DT_KEY;
+        try{localStorage.setItem(key,JSON.stringify(b));}catch(e){}
+      }
+    });
+
+    // PENDING BUYS (confirmation required)
+    if(REGIME==='RISK-ON'||REGIME==='ROTATION'){
+      const maxPosPct=20;
+      const maxPos=Math.floor(100/maxPosPct);
+      if(Object.keys(b.positions).length<maxPos){
+        const scoreT=isDT?2:3,rrT=isDT?1.5:2;
+        results
+          .filter(r=>!b.positions[r.t]&&r.effScore>=scoreT&&r.plan.rr>=rrT)
+          .filter(r=>isDT?(r.ind.h1&&r.ind.h1.score>=1):(r.ind.tfResult.type!=='NONE'))
+          .slice(0,isDT?2:1)
+          .forEach(cand=>{
+            // Don't re-queue if already pending
+            if(BOT_PENDING.find(p=>p.t===cand.t&&p.mode===mode))return;
+            const shares=Math.floor(b.cash*(maxPosPct/100)/cand.price);
+            if(shares<1)return;
+            const pending={t:cand.t,name:cand.name,price:cand.price,shares,
+              stop:cand.plan.stop,t1:cand.plan.t1,score:cand.effScore,
+              rr:cand.plan.rr,mode,b,id:Date.now()+'-'+cand.t};
+            BOT_PENDING.push(pending);
+            botNotifyBuy(pending);
+          });
+      }
+    }
+  });
+  botRenderAll(prices);
+}
+
+function botNotify(type,title,body){
+  const container=document.getElementById('bot-notif');
+  if(!container)return;
+  const card=document.createElement('div');
+  card.className='bot-notif-card '+type;
+  card.innerHTML='<div style="font-weight:700;color:'+(type==='sell'?'var(--red)':'var(--green)')+'">'+title+'</div>'
+    +'<div style="color:var(--muted);margin-top:2px">'+body+'</div>';
+  container.appendChild(card);
+  setTimeout(()=>{card.style.opacity='0';card.style.transition='opacity .5s';setTimeout(()=>card.remove(),500);},6000);
+}
+
+function botNotifyBuy(pending){
+  const container=document.getElementById('bot-notif');
+  if(!container)return;
+  const card=document.createElement('div');
+  card.id='pending-'+pending.id;
+  card.className='bot-notif-card buy';
+  let secs=30;
+  card.innerHTML='<div style="font-weight:700;color:var(--green)">🤖 ['+pending.mode.toUpperCase()+'] KÖP FÖRSLAG: '+pending.t+'</div>'
+    +'<div style="color:var(--muted);margin-top:2px">@ '+f(pending.price)+' | '+pending.shares+' aktier | Score: '+pending.score+' | RR: '+pending.rr+'x</div>'
+    +'<div style="color:var(--muted);font-size:9px">Stop: '+f(pending.stop)+' | T1: '+(pending.t1?f(pending.t1):'--')+'</div>'
+    +'<div style="display:flex;gap:6px;margin-top:8px">'
+    +'<button onclick="botConfirmBuy(\''+pending.id+'\')" style="background:var(--green);color:#000;border:none;padding:3px 12px;font-size:10px;font-weight:700;border-radius:2px;cursor:pointer">✓ BEKRÄFTA</button>'
+    +'<button onclick="botDeclineBuy(\''+pending.id+'\')" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 10px;font-size:10px;border-radius:2px;cursor:pointer">✕ AVBÖJ</button>'
+    +'<span id="pt-'+pending.id+'" style="font-size:9px;color:var(--muted);margin-left:auto;align-self:center">'+secs+'s</span>'
+    +'</div>'
+    +'<div class="bot-timer-bar" id="tb-'+pending.id+'" style="width:100%"></div>';
+  container.appendChild(card);
+
+  // Countdown — auto-decline at 0
+  const iv=setInterval(()=>{
+    secs--;
+    const el=document.getElementById('pt-'+pending.id);
+    const bar=document.getElementById('tb-'+pending.id);
+    if(el)el.textContent=secs+'s';
+    if(bar)bar.style.width=Math.round(secs/30*100)+'%';
+    if(secs<=0){clearInterval(iv);botDeclineBuy(pending.id);}
+  },1000);
+  card._interval=iv;
+}
+
+function botConfirmBuy(id){
+  const pending=BOT_PENDING.find(p=>p.id===id);
+  if(!pending)return;
+  const b=pending.mode==='sw'?BOT:BOT_DT;
+  const today=new Date().toISOString().split('T')[0];
+  const cost=pending.shares*pending.price;
+  if(b.cash<cost){botDeclineBuy(id);return;}
+  b.positions[pending.t]={entry:pending.price,stop:pending.stop,t1:pending.t1,
+    shares:pending.shares,entryDate:today,score:pending.score,rr:pending.rr,name:pending.name};
+  b.cash-=cost;
+  const key=pending.mode==='sw'?BOT_KEY:BOT_DT_KEY;
+  try{localStorage.setItem(key,JSON.stringify(b));}catch(e){}
+  BOT_PENDING=BOT_PENDING.filter(p=>p.id!==id);
+  const card=document.getElementById('pending-'+id);
+  if(card){if(card._interval)clearInterval(card._interval);card.remove();}
+  botNotify('buy','✅ KÖP BEKRÄFTAT: '+pending.t,'@ '+f(pending.price)+' | '+pending.shares+' aktier');
+  botRenderAll();
+}
+
+function botDeclineBuy(id){
+  BOT_PENDING=BOT_PENDING.filter(p=>p.id!==id);
+  const card=document.getElementById('pending-'+id);
+  if(card){if(card._interval)clearInterval(card._interval);card.style.opacity='0';card.style.transition='opacity .3s';setTimeout(()=>card.remove(),300);}
+}
+
+// ================================================================
+// CHART-ANALYS — Claude Vision + systemdata jämförelse
+// ================================================================
+let CA_IMAGE_B64=null;
+let CA_IMAGE_TYPE=null;
+let ANT_KEY=localStorage.getItem('tradesys_antkey')||'';
+
+function caSaveKey(){
+  const v=document.getElementById('ca-antkey').value.trim();
+  if(!v.startsWith('sk-ant-')){
+    document.getElementById('ca-key-status').textContent='⚠ Måste börja med sk-ant-';
+    document.getElementById('ca-key-status').style.color='var(--red)'; return;
+  }
+  ANT_KEY=v; localStorage.setItem('tradesys_antkey',v);
+  document.getElementById('ca-key-status').textContent='✓ Sparad';
+  document.getElementById('ca-key-status').style.color='var(--green)';
+  document.getElementById('ca-antkey').value='sk-ant-***'+v.slice(-4);
+}
+
+function caLoadKey(){
+  const k=localStorage.getItem('tradesys_antkey');
+  if(k){ANT_KEY=k;const el=document.getElementById('ca-antkey');if(el)el.placeholder='sk-ant-***'+k.slice(-4);}
+}
+
+// ─── ALPHA VANTAGE — KEY + FUNDAMENTALS ───────────────────────────────────
+
+function saveAVKey(){
+  const v=document.getElementById('av-keyinput').value.trim();
+  if(!v||v.length<8){
+    document.getElementById('av-key-status').textContent='⚠ Ogiltig nyckel';
+    document.getElementById('av-key-status').style.color='var(--red)'; return;
+  }
+  AV_KEY=v; localStorage.setItem('tradesys_avkey',v);
+  document.getElementById('av-key-status').textContent='✓ AV-nyckel sparad';
+  document.getElementById('av-key-status').style.color='var(--green)';
+  document.getElementById('av-keyinput').value='';
+  document.getElementById('av-keyinput').placeholder='●●●●●●'+v.slice(-4);
+  AV_CACHE={}; // clear cache on new key
+}
+
+function loadAVKey(){
+  const k=localStorage.getItem('tradesys_avkey');
+  if(k){
+    AV_KEY=k;
+    const el=document.getElementById('av-keyinput');
+    if(el) el.placeholder='●●●●●●'+k.slice(-4);
+    const st=document.getElementById('av-key-status');
+    if(st){st.textContent='✓ Nyckel laddad';st.style.color='var(--green)';}
+  }
+}
+
+async function avFetch(fn, ticker){
+  if(!AV_KEY) return null;
+  const cacheKey=fn+'_'+ticker;
+  const cached=AV_CACHE[cacheKey];
+  const TTL=23*60*60*1000; // 23h — refresh once per day
+  if(cached && Date.now()-cached.ts<TTL) return cached.data;
+  try{
+    const url=`https://www.alphavantage.co/query?function=${fn}&symbol=${ticker}&apikey=${AV_KEY}`;
+    const r=await fetch(url);
+    if(!r.ok) return null;
+    const d=await r.json();
+    if(d['Note']||d['Information']) return null; // rate limit hit
+    AV_CACHE[cacheKey]={data:d,ts:Date.now()};
+    return d;
+  }catch(e){return null;}
+}
+
+async function getAVOverview(ticker){
+  const d=await avFetch('OVERVIEW',ticker);
+  if(!d||!d.Symbol) return null;
+  return {
+    pe:          parseFloat(d.PERatio)||null,
+    eps:         parseFloat(d.EPS)||null,
+    revenueGrowthYoY: parseFloat(d.QuarterlyRevenueGrowthYOY)||null,
+    earningsGrowthYoY:parseFloat(d.QuarterlyEarningsGrowthYOY)||null,
+    profitMargin: parseFloat(d.ProfitMargin)||null,
+    beta:        parseFloat(d.Beta)||null,
+    week52High:  parseFloat(d['52WeekHigh'])||null,
+    week52Low:   parseFloat(d['52WeekLow'])||null,
+    marketCap:   parseFloat(d.MarketCapitalization)||null,
+    sector:      d.Sector||'--',
+    nextEarnings: d.NextEarningsDate||null,
+    analystTarget:parseFloat(d.AnalystTargetPrice)||null,
+  };
+}
+
+async function getAVEarnings(ticker){
+  const d=await avFetch('EARNINGS',ticker);
+  if(!d||!d.quarterlyEarnings) return null;
+  // Last 4 quarters
+  const q=d.quarterlyEarnings.slice(0,4).map(e=>({
+    date:      e.reportedDate,
+    estimated: parseFloat(e.estimatedEPS),
+    actual:    parseFloat(e.reportedEPS),
+    surprise:  parseFloat(e.surprisePercentage),
+  }));
+  const beatCount=q.filter(e=>e.surprise>0).length;
+  return {quarters:q, beatCount, streak: calcEarningsStreak(q)};
+}
+
+function calcEarningsStreak(quarters){
+  let streak=0;
+  for(const q of quarters){
+    if(q.surprise>0) streak++;
+    else break;
+  }
+  return streak;
+}
+
+async function getAVFundamentals(ticker){
+  const [ov, earn] = await Promise.all([getAVOverview(ticker), getAVEarnings(ticker)]);
+  return {overview:ov, earnings:earn};
+}
+
+function renderFundCard(ticker, fund){
+  if(!fund||!fund.overview) return '<div style="color:var(--muted);font-size:9px;padding:4px">Fundamental data ej tillgänglig</div>';
+  const ov=fund.overview; const earn=fund.earnings;
+  const fmt=(v,dec=1,suffix='')=>v!==null&&!isNaN(v)?v.toFixed(dec)+suffix:'--';
+  const fmtB=(v)=>v?'$'+(v/1e9).toFixed(1)+'B':'--';
+  const fmtPct=(v)=>v!==null&&!isNaN(v)?(v>0?'+':'')+v.toFixed(1)+'%':'--';
+
+  // EPS beat row
+  let earnHtml='--';
+  if(earn&&earn.quarters.length){
+    const beatIcons=earn.quarters.map(q=>
+      q.surprise>5?'<span style="color:var(--green)" title="Beat +'+q.surprise.toFixed(1)+'%">✅</span>':
+      q.surprise>0?'<span style="color:var(--green)" title="Beat +'+q.surprise.toFixed(1)+'%">✓</span>':
+      q.surprise<0?'<span style="color:var(--red)" title="Miss '+q.surprise.toFixed(1)+'%">✗</span>':
+      '<span style="color:var(--muted)">–</span>'
+    ).join(' ');
+    earnHtml=beatIcons+' <span style="color:var(--muted);font-size:9px">('+earn.beatCount+'/4 kvartal)</span>';
+  }
+
+  const earningsDate=ov.nextEarnings?
+    '<span style="color:var(--orange);font-weight:600">📅 '+ov.nextEarnings+'</span>':'--';
+
+  const targetUpside=ov.analystTarget&&ov.week52High?
+    ((ov.analystTarget/ov.week52High-1)*100).toFixed(1)+'%':'--';
+
+  return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:8px 10px;margin-top:4px;font-size:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 12px">
+      <div><span style="color:var(--muted);font-size:9px">P/E</span><br><strong>${fmt(ov.pe)}</strong></div>
+      <div><span style="color:var(--muted);font-size:9px">EPS</span><br><strong>$${fmt(ov.eps,2)}</strong></div>
+      <div><span style="color:var(--muted);font-size:9px">BETA</span><br><strong>${fmt(ov.beta,2)}</strong></div>
+      <div><span style="color:var(--muted);font-size:9px">REV GROWTH YoY</span><br><strong class="${ov.revenueGrowthYoY>0?'pos':'neg'}">${fmtPct(ov.revenueGrowthYoY*100)}</strong></div>
+      <div><span style="color:var(--muted);font-size:9px">EARN GROWTH YoY</span><br><strong class="${ov.earningsGrowthYoY>0?'pos':'neg'}">${fmtPct(ov.earningsGrowthYoY*100)}</strong></div>
+      <div><span style="color:var(--muted);font-size:9px">MARGIN</span><br><strong>${fmtPct(ov.profitMargin*100)}</strong></div>
+      <div><span style="color:var(--muted);font-size:9px">MKT CAP</span><br><strong>${fmtB(ov.marketCap)}</strong></div>
+      <div><span style="color:var(--muted);font-size:9px">ANALYST TARGET</span><br><strong class="pos">$${fmt(ov.analystTarget)}</strong></div>
+      <div><span style="color:var(--muted);font-size:9px">SEKTOR</span><br><span style="color:var(--muted)">${ov.sector}</span></div>
+    </div>
+    <div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
+      <span style="color:var(--muted);font-size:9px">EPS BEAT 4 KVARTAL: </span>${earnHtml}
+    </div>
+    <div style="margin-top:4px">
+      <span style="color:var(--muted);font-size:9px">NÄSTA EARNINGS: </span>${earningsDate}
+    </div>
+    <div style="margin-top:4px;font-size:9px;color:var(--muted)">
+      52v: $${fmt(ov.week52Low)} – $${fmt(ov.week52High)}
+    </div>
+  </div>`;
+}
+
+function caHandleDrop(e){
+  e.preventDefault();
+  document.getElementById('ca-drop').classList.remove('drag');
+  const file=e.dataTransfer.files[0];
+  if(file&&file.type.startsWith('image/'))caHandleFile(file);
+}
+
+function caHandleFile(file){
+  if(!file)return;
+  CA_IMAGE_TYPE=file.type||'image/png';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const b64=e.target.result.split(',')[1];
+    CA_IMAGE_B64=b64;
+    const img=document.getElementById('ca-img');
+    img.src=e.target.result;
+    document.getElementById('ca-preview').style.display='block';
+    document.getElementById('ca-drop-label').innerHTML='<div style="font-size:10px;color:var(--green)">✓ Bild laddad — redo för analys</div>';
+  };
+  reader.readAsDataURL(file);
+}
+
+function caClear(){
+  CA_IMAGE_B64=null;CA_IMAGE_TYPE=null;
+  document.getElementById('ca-preview').style.display='none';
+  document.getElementById('ca-result').innerHTML='';
+  document.getElementById('ca-file').value='';
+  document.getElementById('ca-drop-label').innerHTML='<div style="font-size:24px;margin-bottom:8px">📊</div><div style="font-size:11px;color:var(--muted)">Dra & släpp TradingView-skärmbild här</div><div style="font-size:10px;color:var(--muted);margin-top:4px">eller klicka för att välja fil</div>';
+}
+
+async function caAnalyze(){
+  if(!CA_IMAGE_B64){alert('Ladda upp en chart-bild först.');return;}
+  const ticker=(document.getElementById('ca-ticker').value||'').toUpperCase().trim();
+  if(!ticker){alert('Ange ticker.');return;}
+  const tf=document.getElementById('ca-tf').value;
+  const btn=document.getElementById('ca-btn');
+  btn.textContent='Analyserar...';btn.disabled=true;
+
+  const resultEl=document.getElementById('ca-result');
+  resultEl.innerHTML='<div class="load"><div class="spin"></div>Hämtar systemdata + analyserar chart med Claude Vision...</div>';
+
+  // Fetch system data for comparison
+  let sysData='Systemdata ej tillgänglig';
+  try{
+    const ind=await getInd(ticker);
+    if(ind&&ind.price){
+      const plan=buildTradePlan(ind,0);
+      const ss=ind.setup.adjustedScore!==undefined?ind.setup.adjustedScore:ind.setup.score;
+      sysData=`SYSTEMDATA FÖR ${ticker} (från API, 15-min delay):
+Pris: ${f(ind.price)}
+Setup score: ${ss}/7
+1D trend: ${ind.d1.trend}
+EMA10: ${f(ind.d1.ema10)} | EMA20: ${f(ind.d1.ema20)} | EMA50: ${f(ind.ema50)}
+1D RSI: ${f(ind.d1.rsi)} | ADX: ${f(ind.d1.adx)}
+4H score: ${ind.h4.score} | 1H score: ${ind.h1.score}
+Pearson R: ${f(ind.pearsonR)}
+RelVol: ${f(ind.relVol)}x | RS5: ${f(ind.rs5)}%
+ATR: ${f(ind.atr)}
+Dynamisk stop (ATR): ${f(ind.dynStop)}
+Entry-zon: ${ind.entry?f(ind.entry.level)+' ('+ind.entry.type+')':'Extended/ingen zon'}
+T1: ${f(plan.t1)} | T2: ${f(plan.t2)}
+RR: ${plan.rr?plan.rr+'x':'--'}
+Systemets rekommendation: ${getRec(ind,0)}
+Score-detaljer: ${ind.setup.reasons.join(' | ')}`;
+    }
+  }catch(e){sysData='Kunde ej hämta systemdata: '+e.message;}
+
+  const prompt=`Du är en professionell teknisk analytiker. Analysera detta TradingView-chart för ${ticker} (${tf} timeframe).
+
+ANALYSERA CHARTET:
+1. Trend: upptrend/nedtrend/sidleds? HL/HH-struktur?
+2. EMA-stack: ordning och relation till pris?
+3. RSI: nivå och divergenser?
+4. ADX: trendstyrka?
+5. VWAP: pris over/under?
+6. Pearson R / trendlinjekvalitet
+7. Key levels: motstånd, stöd, entry-zon
+8. Volym: bekräftar rörelsen?
+9. Sammanfattning: setup-typ (A/B/C), edge-rating 1-5, vad du väntar på
+
+JÄMFÖR SEDAN med systemets data:
+${sysData}
+
+Flagga AVVIKELSER där din visuella analys skiljer sig från systemdatan. Var specifik om nivåer (exakta priser). Svara på svenska. Formatera med tydliga sektioner.`;
+
+  try{
+    if(!ANT_KEY||!ANT_KEY.startsWith('sk-ant-')){
+      resultEl.innerHTML='<div style="color:var(--orange);padding:10px">⚠ Ange din Anthropic API-nyckel (sk-ant-…) i fältet ovan för att aktivera chart-analysen.</div>';
+      btn.textContent='🔍 ANALYSERA & JÄMFÖR MED SYSTEMDATA';btn.disabled=false; return;
+    }
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': ANT_KEY,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:CA_IMAGE_TYPE,data:CA_IMAGE_B64}},
+          {type:'text',text:prompt}
+        ]}]
+      })
+    });
+    if(!resp.ok){
+      const err=await resp.text();
+      resultEl.innerHTML='<div style="color:var(--red);padding:10px">API-fel '+resp.status+': '+escHtml(err.substring(0,300))+'<br><br>OBS: Chart-analys kräver en Anthropic API-nyckel (börjar med sk-ant-), inte Polygon-nyckeln.</div>';
+      btn.textContent='🔍 ANALYSERA & JÄMFÖR MED SYSTEMDATA';btn.disabled=false; return;
+    }
+    const text=data.content&&data.content[0]&&data.content[0].text||'Inget svar från Claude.';
+
+    // Render result
+    resultEl.innerHTML='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:14px 16px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">'
+      +'<span style="font-weight:700;color:var(--accent)">CHART-ANALYS: '+ticker+' ('+tf+')</span>'
+      +'<span style="font-size:9px;color:var(--muted)">'+new Date().toLocaleTimeString('sv-SE')+'</span>'
+      +'</div>'
+      +'<div style="font-size:11px;line-height:1.7;color:var(--text);white-space:pre-wrap">'+escHtml(text)+'</div>'
+      +'</div>';
+  }catch(e){
+    resultEl.innerHTML='<div style="color:var(--red);padding:10px">Fel vid analys: '+e.message+'</div>';
+  }
+  btn.textContent='🔍 ANALYSERA & JÄMFÖR MED SYSTEMDATA';btn.disabled=false;
+}
+
 function swTab(name,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
@@ -1948,6 +2587,7 @@ function swTab(name,el){
   document.getElementById('tc-'+name).classList.add('active');
   if(name==='logg'){loadTradeLog();renderLogg();}
   if(name==='bot'){botLoad();botRenderAll();}
+  if(name==='chart'){}
 }
 document.getElementById('ar').addEventListener('change',function(){clearInterval(timer);if(this.checked)timer=setInterval(loadAll,60000);});
 // Load saved key + trade log from localStorage
@@ -1961,6 +2601,8 @@ window.addEventListener('load',function(){
   if(KEY&&KEY.length>10){
     loadAll();
     if(document.getElementById('ar').checked)timer=setInterval(loadAll,60000);
+  caLoadKey();
+  loadAVKey();
   } else {
     setS('Ange API-nyckel och tryck SPARA & LADDA',false);
   }
