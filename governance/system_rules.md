@@ -105,3 +105,10 @@ EMA50 lagras på `ind.ema50` — INTE `ind.d1.ema50`. Detta är en känd fallgro
 5. Netlify auto-deployas (~30 sek)
 6. Claude uppdaterar state/ och project_memory/ i repo
 ```
+
+### DEPLOY-REGEL — LOKAL FIRST
+- Alla ändringar verifieras lokalt innan push till GitHub
+- Starta lokal server: ./serve.sh (eller: cd ~/tradesys1337 && python3 -m http.server 8080)
+- Öppna: http://localhost:8080
+- Push till GitHub (→ Netlify deploy) görs EN gång per session när allt är verifierat
+- Netlify deployas aldrig för enskilda ändringar under aktiv utveckling
