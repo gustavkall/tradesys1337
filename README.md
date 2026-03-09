@@ -1,78 +1,70 @@
 # TRADESYS
-Regelbaserat daytrading-system för amerikansk börs.
 
-**Live dashboard:** https://tradesys1337.netlify.app  
-**Repo:** https://github.com/gustavkall/tradesys1337
+Trading dashboard — multi-timeframe watchlist, SW/DT bot, fundamentals, chart-analys.
 
----
-
-## FÖR CLAUDE — SESSION BOOT
-
-Klistra in `AI_STARTPROMPT.md` i Claude Project Instructions.  
-Claude fetchar automatiskt rätt filer och är briefad på 10 sekunder.
-
-Boot-sekvens (5 filer):
-```
-https://raw.githubusercontent.com/gustavkall/tradesys1337/main/governance/system_rules.md
-https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/current_state.md
-https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/work_queue.md
-https://raw.githubusercontent.com/gustavkall/tradesys1337/main/project_memory/architecture.md
-https://raw.githubusercontent.com/gustavkall/tradesys1337/main/project_memory/decisions.md
-```
+**Live:** https://tradesys1337.netlify.app
 
 ---
 
-## REPO-STRUKTUR
+## SESSION BOOT — för varje ny Claude-chatt
+
+Kör dessa 6 fetch automatiskt i sessionstart:
+
+```
+1. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/governance/system_rules.md
+2. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/current_state.md
+3. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/work_queue.md
+4. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/project_memory/architecture.md
+5. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/project_memory/decisions.md
+6. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/index.html
+```
+
+---
+
+## ARBETSFLÖDE
+
+1. Claude fetchar alla 6 URLs vid sessionstart (via CORS Unblocked i Chrome)
+2. Claude läser koden i kontext och modifierar den direkt i browser-minnet
+3. Claude skapar en **nedladdningslänk** i din Chrome-flik — klicka på den
+4. Öppna nedladdad `index.html` lokalt i Chrome (`Cmd+O` eller dra till Chrome)
+5. När det ser rätt ut: `git add index.html && git commit -m "..." && git push`
+6. Netlify auto-deployas från GitHub main
+
+**Claude kräver ALDRIG terminalkommandon för att läsa eller modifiera kod.**
+**Claude skriver alltid ny index.html och ger nedladdningslänk direkt i chatten.**
+
+---
+
+## KRAV
+
+- **CORS Unblocked** (Chrome-extension) — måste vara aktiv
+- **Polygon.io API-nyckel** — Stocks Starter ($29/mån)
+- **Alpha Vantage API-nyckel** — gratis (25 req/dag)
+- **Anthropic API-nyckel** — för chart-analys (sk-ant-...)
+
+---
+
+## REPOSTRUKTUR
 
 ```
 tradesys1337/
-├── index.html                ← Dashboard (senaste version, deployas till Netlify)
-├── README.md                 ← Detta dokument
-├── AI_STARTPROMPT.md         ← Klistras in i Claude Project Instructions
+├── index.html                    ← Dashboard (ALLT i en fil)
 ├── governance/
-│   └── system_rules.md       ← Immutable operating rules (ändras sällan)
+│   └── system_rules.md           ← Arbetsregler, governance
 ├── state/
-│   ├── current_state.md      ← Operationellt läge (uppdateras varje session)
-│   ├── work_queue.md         ← Prioriterad uppgiftslista
-│   └── session_handoff.md    ← Handoff-notering till nästa session
+│   ├── current_state.md          ← Nuvarande systemstate
+│   └── work_queue.md             ← Uppgifter och prioritering
 └── project_memory/
-    ├── architecture.md       ← Teknisk arkitektur (uppdateras vid strukturförändringar)
-    └── decisions.md          ← Beslutlogg med motiveringar (kumulativ, aldrig raderas)
-```
-
-### Filernas syfte
-| Fil | Uppdateras | Av vem |
-|-----|-----------|--------|
-| governance/system_rules.md | Vid regeländring | Explicit beslut |
-| state/current_state.md | Varje session | Claude vid sessionslut |
-| state/work_queue.md | Varje session | Claude vid sessionslut |
-| state/session_handoff.md | Varje session | Claude vid sessionslut |
-| project_memory/architecture.md | Vid strukturförändring | Claude |
-| project_memory/decisions.md | Vid beslut | Claude (additivt) |
-| index.html | Vid dashboard-uppdatering | Claude → du pushar |
-
----
-
-## DEPLOY-PIPELINE
-
-```
-Claude redigerar index.html
-→ JS syntax-verifieras (node vm.Script)
-→ Du laddar ned från Claude outputs
-→ Du pushar till GitHub main
-→ Netlify auto-deployas (~30 sek)
-→ Claude uppdaterar state/ och pushar
+    ├── architecture.md           ← Teknisk arkitektur
+    └── decisions.md              ← Beslutslogg
 ```
 
 ---
 
-## API-TJÄNSTER
+## STACK
 
-| Tjänst | Tier | Syfte |
-|--------|------|-------|
-| Polygon.io | Stocks Starter ($29/mån) | OHLCV, snapshots, indices |
-| Alpha Vantage | Free (25 req/dag) | Fundamentals: P/E, EPS, earnings |
-| Anthropic | API | Chart-analys via Vision |
-| TradingView | Premium | Manuell chartanalys (ej API-integrerat) |
-
-**API-nycklar lagras i browser localStorage — aldrig i repot.**
+- Vanilla HTML/CSS/JS — noll dependencies, noll build-steg
+- Polygon.io REST API — OHLCV, snapshots, indices
+- Alpha Vantage API — fundamentaldata (P/E, EPS, earnings)
+- Anthropic Claude API — chart-analys via vision
+- Netlify — statisk hosting, auto-deploy från GitHub main
