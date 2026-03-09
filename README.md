@@ -16,22 +16,15 @@ Kör dessa 6 fetch automatiskt i sessionstart:
 3. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/work_queue.md
 4. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/project_memory/architecture.md
 5. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/project_memory/decisions.md
-6. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/index.html
 ```
 
 ---
 
 ## ARBETSFLÖDE
 
-1. Claude fetchar alla 6 URLs vid sessionstart (via CORS Unblocked i Chrome)
-2. Claude läser koden i kontext och modifierar den direkt i browser-minnet
-3. Claude skapar en **nedladdningslänk** i din Chrome-flik — klicka på den
-4. Öppna nedladdad `index.html` lokalt i Chrome (`Cmd+O` eller dra till Chrome)
-5. När det ser rätt ut: `git add index.html && git commit -m "..." && git push`
-6. Netlify auto-deployas från GitHub main
-
-**Claude kräver ALDRIG terminalkommandon för att läsa eller modifiera kod.**
-**Claude skriver alltid ny index.html och ger nedladdningslänk direkt i chatten.**
+Claude Code är installerat. För kodändringar i index.html — 
+använd Claude Code i terminalen (cd ~/tradesys1337 && claude).
+Denna chatt används för strategi, analys och beslut.
 
 ---
 
