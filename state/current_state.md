@@ -6,7 +6,7 @@
 ## SYSTEMSTATUS
 | Parameter | Värde |
 |-----------|-------|
-| Datum | 2026-03-08 |
+| Datum | 2026-03-09 |
 | Dashboard version | v32+ |
 | Repo | github.com/gustavkall/tradesys1337 |
 | Live URL | https://tradesys1337.netlify.app |
@@ -24,6 +24,7 @@
 - BUG-004: Rate-limit fix, batch 8→3, 400ms delay
 - Repo-struktur: GitHub + Netlify setup, context/ filer pushade
 - Repo-migration: context/ → governance/state/project_memory/ (denna session)
+- WQ-002: Alpha Vantage API-nyckel regenererad, verifierad 2026-03-09
 
 ---
 
@@ -54,7 +55,7 @@ Inget blockerat.
 | Tjänst | Status | Notering |
 |--------|--------|----------|
 | Polygon Stocks Starter | ✅ Aktiv | Unlimited calls, 15-min delay |
-| Alpha Vantage | ⚠️ Nyckel ska regenereras | Gammal nyckel exponerades i chat |
+| Alpha Vantage | ✅ Aktiv | Nyckel regenererad 2026-03-09 |
 | Anthropic Chart API | ✅ Konfigurerad | sk-ant-... i orange fält i UI |
 
 ---

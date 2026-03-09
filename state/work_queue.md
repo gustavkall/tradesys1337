@@ -19,12 +19,6 @@
 - Inga TypeError i browser console
 **Beroenden:** Öppen marknad (US, måndag–fredag 15:30–22:00 CET)
 
-### WQ-002 — Regenerera Alpha Vantage API-nyckel
-**Prioritet:** HÖG (säkerhet)
-**Beskrivning:** Gammal nyckel APUJC1KAVER6QMW7 exponerades i chat. Måste bytas.
-**Steg:** alphavantage.co → API Key → Regenerate → uppdatera i dashboard localStorage
-**Acceptanskriterier:** Fundamentals-📊-knapp fungerar med ny nyckel
-
 ### WQ-003 — Testa bot auto-scan live
 **Prioritet:** MEDIUM
 **Beskrivning:** BOT AUTO-toggle testad i sandbox men ej i live-marknadsförhållanden.
@@ -62,3 +56,4 @@
 | BUG-006 | Chart Analysis fetch error | 2026-03-07 | ✅ Fixad |
 | INFRA-001 | GitHub + Netlify setup | 2026-03-08 | ✅ Klar |
 | INFRA-002 | Repo-migration context→v2 | 2026-03-08 | ✅ Klar |
+| WQ-002 | Regenerera Alpha Vantage API-nyckel | 2026-03-09 | ✅ Ny nyckel inlagd, fundamentals verifierat |
