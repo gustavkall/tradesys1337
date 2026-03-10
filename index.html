@@ -235,6 +235,8 @@ td:nth-child(2){text-align:left;color:var(--muted);font-size:10px;}
         <button class="btn-filter" id="f-wl-salj" onclick="toggleFilter('wl','salj',this)">SALJ</button>
         <div class="sep"></div>
         <button class="btn-filter" id="f-wl-topp" onclick="sortTopCandidates()">★ TOPP</button>
+        <div class="sep"></div>
+        <button class="bsm" id="sync-btn" onclick="syncWLToGitHub()">Sync →</button>
       </div>
       <div id="wl-tbl"><div class="load"><div class="spin"></div>Vantar...</div></div>
     </div>
@@ -1500,8 +1502,66 @@ function attachSort(){
 }
 
 // ---- ADD/REMOVE ----
-function addWL(){const t=document.getElementById('wl-t').value.trim().toUpperCase();const stop=parseFloat(document.getElementById('wl-stop').value)||0;const up=parseFloat(document.getElementById('wl-up').value)||0;if(!t)return;WL.push({t,n:t,stop,up});document.getElementById('wl-t').value='';loadWatchlist();}
-function delWL(i){WL.splice(i,1);loadWatchlist();}
+function saveWL(){try{localStorage.setItem('tradesys_wl',JSON.stringify(WL));}catch(e){}}
+function addWL(){const t=document.getElementById('wl-t').value.trim().toUpperCase();const stop=parseFloat(document.getElementById('wl-stop').value)||0;const up=parseFloat(document.getElementById('wl-up').value)||0;if(!t)return;WL.push({t,n:t,stop,up});saveWL();document.getElementById('wl-t').value='';loadWatchlist();}
+function delWL(i){WL.splice(i,1);saveWL();loadWatchlist();}
+
+// ---- SYNC WL TO GITHUB ----
+async function syncWLToGitHub(){
+  const btn=document.getElementById('sync-btn');
+  const token=localStorage.getItem('tradesys_ghtoken');
+  if(!token){
+    const t=prompt('GitHub PAT (repo scope) krävs för sync.\nLagras i localStorage som tradesys_ghtoken.');
+    if(!t)return;
+    localStorage.setItem('tradesys_ghtoken',t);
+    return syncWLToGitHub();
+  }
+  btn.disabled=true;btn.textContent='Syncar...';
+  try{
+    const repo='gustavkall/tradesys1337';
+    const path='state/watchlist.json';
+    const content=btoa(unescape(encodeURIComponent(JSON.stringify(WL,null,2))));
+    // Get current file SHA (needed for update)
+    let sha=null;
+    try{
+      const r=await fetch('https://api.github.com/repos/'+repo+'/contents/'+path+'?ref=main',{headers:{'Authorization':'token '+token}});
+      if(r.ok){const d=await r.json();sha=d.sha;}
+    }catch(e){}
+    const body={message:'state: sync watchlist '+new Date().toISOString().split('T')[0],content,branch:'main'};
+    if(sha)body.sha=sha;
+    const res=await fetch('https://api.github.com/repos/'+repo+'/contents/'+path,{
+      method:'PUT',
+      headers:{'Authorization':'token '+token,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if(!res.ok){const e=await res.text();throw new Error('GitHub API: '+res.status+' '+e);}
+    saveWL();
+    btn.textContent='✓ Synced';
+    setTimeout(()=>{btn.textContent='Sync →';},2000);
+  }catch(e){
+    console.error('Sync error:',e);
+    btn.textContent='FEL';
+    alert('Sync misslyckades: '+e.message);
+    setTimeout(()=>{btn.textContent='Sync →';},3000);
+  }finally{btn.disabled=false;}
+}
+
+// ---- LOAD WL FROM REPO (startup fallback) ----
+async function loadWLFromRepo(){
+  // Local wins: om WL redan modifierats (sparad i localStorage) → skip
+  try{
+    const saved=localStorage.getItem('tradesys_wl');
+    if(saved){WL=JSON.parse(saved);return;}
+  }catch(e){}
+  try{
+    const r=await fetch('https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/watchlist.json');
+    if(r.ok){
+      const data=await r.json();
+      if(Array.isArray(data)&&data.length>0){WL=data;dbg('WL loaded from repo: '+data.length+' tickers');}
+    }
+  }catch(e){dbg('WL repo fetch failed: '+e.message);}
+}
+
 function addPF(){const t=document.getElementById('pf-t').value.trim().toUpperCase();const b=parseFloat(document.getElementById('pf-b').value)||0;const stop=parseFloat(document.getElementById('pf-stop').value)||0;const up=parseFloat(document.getElementById('pf-up').value)||0;if(!t)return;PF.push({t,n:t,b,stop,up});document.getElementById('pf-t').value='';loadPortfolio();}
 function delPF(i){PF.splice(i,1);loadPortfolio();}
 function addSE(){const t=document.getElementById('se-t').value.trim().toUpperCase();const n=document.getElementById('se-n').value.trim()||t;if(!t)return;SECTORS.push({t,n});document.getElementById('se-t').value='';loadSectors();}
@@ -2138,7 +2198,7 @@ function saveLoad(){
   try{localStorage.setItem('tradesys_key',k);}catch(e){}
   document.getElementById('apist').textContent='Sparad';
   document.getElementById('apist').style.color='var(--green)';
-  loadAll();
+  loadWLFromRepo().then(()=>loadAll());
 }
 // ================================================================
 // BOT AUTO-SCAN — körs efter varje 60s refresh
