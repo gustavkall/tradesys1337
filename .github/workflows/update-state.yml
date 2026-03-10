@@ -21,6 +21,7 @@ jobs:
         run: node scripts/fetch-state.js
         env:
           POLYGON_KEY: ${{ secrets.POLYGON_KEY }}
+          ALPHA_VANTAGE: ${{ secrets.ALPHA_VANTAGE }}
 
       - name: Commit updated state
         run: |
