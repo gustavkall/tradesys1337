@@ -42,13 +42,14 @@ Inget blockerat.
 ## MARKNADSREGIM (SENAST KÄNT)
 | Parameter | Värde | Datum |
 |-----------|-------|-------|
-| Regime | TRANSITION / RISK-OFF LÄTTNAD | 2026-03-10 |
-| VIX | 23.01 | 2026-03-10 |
-| VIX daglig rörelse | -9.80% | 2026-03-10 |
-| SPY | +0.34% | 2026-03-10 |
-| HYG | +0.12% | 2026-03-10 |
-| Signal | INGEN TRADE — ej konfirmerat RISK-ON | 2026-03-10 |
-
+| SPY close | 678.27 | 2026-03-10 |
+| SPY daglig | +1.78% | 2026-03-10 |
+| IWM close | 253.62 | 2026-03-10 |
+| IWM daglig | +2.44% | 2026-03-10 |
+| HYG close | 80.17 | 2026-03-10 |
+| HYG daglig | +0.73% | 2026-03-10 |
+| VIX | — (kräver plan-uppgradering) | 2026-03-10 |
+| Signal | — | 2026-03-10 |
 ---
 
 ## API-STATUS
