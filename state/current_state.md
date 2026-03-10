@@ -6,7 +6,7 @@
 ## SYSTEMSTATUS
 | Parameter | Värde |
 |-----------|-------|
-| Datum | 2026-03-09 |
+| Datum | 2026-03-10 |
 | Dashboard version | v32+ |
 | Repo | github.com/gustavkall/tradesys1337 |
 | Live URL | https://tradesys1337.netlify.app |
@@ -42,12 +42,12 @@ Inget blockerat.
 ## MARKNADSREGIM (SENAST KÄNT)
 | Parameter | Värde | Datum |
 |-----------|-------|-------|
-| Regime | RISK-OFF | 2026-03-08 |
-| VIX | 35.67 | 2026-03-08 |
-| VIX daglig rörelse | +13.7% SPIKE | 2026-03-08 |
-| SPY | -1.31% | 2026-03-08 |
-| HYG | -0.49% | 2026-03-08 |
-| Signal | INGEN TRADE | 2026-03-08 |
+| Regime | TRANSITION / RISK-OFF LÄTTNAD | 2026-03-10 |
+| VIX | 23.01 | 2026-03-10 |
+| VIX daglig rörelse | -9.80% | 2026-03-10 |
+| SPY | +0.34% | 2026-03-10 |
+| HYG | +0.12% | 2026-03-10 |
+| Signal | INGEN TRADE — ej konfirmerat RISK-ON | 2026-03-10 |
 
 ---
 
