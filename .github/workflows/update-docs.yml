@@ -1,0 +1,83 @@
+name: Auto-update project memory
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-docs:
+    if: "!contains(github.event.head_commit.message, 'docs: auto-update')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 2
+
+      - name: Get changed files
+        id: changed
+        run: |
+          FILES=$(git log --name-only -1 --pretty=format:'')
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update decisions.md if scripts or workflows changed
+        run: |
+          FILES="${{ steps.changed.outputs.files }}"
+          TODAY=$(date -u +%Y-%m-%d)
+          UPDATED=false
+
+          for FILE in $FILES; do
+            case "$FILE" in
+              scripts/*|.github/workflows/*)
+                BASENAME=$(basename "$FILE")
+                cat >> project_memory/decisions.md << ENTRY
+
+          ### DEC-AUTO-${TODAY} — ${BASENAME} tillagd/ändrad
+          **Datum:** ${TODAY}
+          **Beslut:** Automatiskt loggad förändring
+          **Påverkan:** ${FILE} committat till main
+          ENTRY
+                UPDATED=true
+                ;;
+            esac
+          done
+
+          echo "decisions_updated=$UPDATED" >> $GITHUB_ENV
+
+      - name: Update work_queue.md if state or index.html changed
+        run: |
+          FILES="${{ steps.changed.outputs.files }}"
+          TODAY=$(date -u +%Y-%m-%d)
+          UPDATED=false
+
+          for FILE in $FILES; do
+            case "$FILE" in
+              state/*|index.html)
+                BASENAME=$(basename "$FILE")
+                # Check if there's an ACTIVE item mentioning this file
+                if grep -q "$BASENAME" project_memory/../state/work_queue.md 2>/dev/null; then
+                  # Append to COMPLETED table
+                  sed -i "/^| ID | Uppgift | Datum | Outcome |/,/^$/{
+                    /^$/i\\
+          | AUTO | ${BASENAME} uppdaterad | ${TODAY} | ✅ Committat |
+                  }" state/work_queue.md
+                  UPDATED=true
+                fi
+                ;;
+            esac
+          done
+
+          echo "queue_updated=$UPDATED" >> $GITHUB_ENV
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet && exit 0
+          git add project_memory/decisions.md state/work_queue.md
+          git commit -m "docs: auto-update project_memory $(date -u +%Y-%m-%d)"
+          git push
