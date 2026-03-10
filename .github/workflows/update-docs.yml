@@ -7,7 +7,6 @@ on:
 
 jobs:
   update-docs:
-    # Loop protection moved to commit step
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -17,90 +16,47 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           fetch-depth: 2
 
-      - name: Get changed files
-        id: changed
+      - name: Update project memory
         run: |
-          FILES=$(git log --name-only -1 --pretty=format:'')
-          echo "files<<EOF" >> $GITHUB_OUTPUT
-          echo "$FILES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Update decisions.md if scripts or workflows changed
-        run: |
-          FILES="${{ steps.changed.outputs.files }}"
-          TODAY=$(date -u +%Y-%m-%d)
-          UPDATED=false
-
-          for FILE in $FILES; do
-            case "$FILE" in
-              scripts/*|.github/workflows/*)
-                BASENAME=$(basename "$FILE")
-                cat >> project_memory/decisions.md << ENTRY
-
-          ### DEC-AUTO-${TODAY} — ${BASENAME} tillagd/ändrad
-          **Datum:** ${TODAY}
-          **Beslut:** Automatiskt loggad förändring
-          **Påverkan:** ${FILE} committat till main
-          ENTRY
-                UPDATED=true
-                ;;
-            esac
-          done
-
-          echo "decisions_updated=$UPDATED" >> $GITHUB_ENV
-
-      - name: Log index.html changes to decisions.md
-        run: |
-          FILES="${{ steps.changed.outputs.files }}"
-          if echo "$FILES" | grep -q "^index.html$"; then
-            TODAY=$(date -u +%Y-%m-%d)
-            HASH=$(git log -1 --pretty=format:'%h')
-            MSG=$(git log -1 --pretty=format:'%s')
-            cat >> project_memory/decisions.md << ENTRY
-
-### CHANGELOG-${TODAY} — index.html
-**Datum:** ${TODAY}
-**Commit:** ${HASH}
-**Ändring:** ${MSG}
-ENTRY
-          fi
-
-      - name: Update work_queue.md if state or index.html changed
-        run: |
-          FILES="${{ steps.changed.outputs.files }}"
-          TODAY=$(date -u +%Y-%m-%d)
-          UPDATED=false
-
-          for FILE in $FILES; do
-            case "$FILE" in
-              state/*|index.html)
-                BASENAME=$(basename "$FILE")
-                # Check if there's an ACTIVE item mentioning this file
-                if grep -q "$BASENAME" project_memory/../state/work_queue.md 2>/dev/null; then
-                  # Append to COMPLETED table
-                  sed -i "/^| ID | Uppgift | Datum | Outcome |/,/^$/{
-                    /^$/i\\
-          | AUTO | ${BASENAME} uppdaterad | ${TODAY} | ✅ Committat |
-                  }" state/work_queue.md
-                  UPDATED=true
-                fi
-                ;;
-            esac
-          done
-
-          echo "queue_updated=$UPDATED" >> $GITHUB_ENV
-
-      - name: Commit and push
-        run: |
-          # Loop protection: skip if triggered by our own commit
+          # Loop protection
           MSG=$(git log -1 --pretty=format:'%s')
           if echo "$MSG" | grep -q "^docs: auto-update"; then
             echo "Skipping — triggered by auto-update commit"
             exit 0
           fi
+
+          FILES=$(git log --name-only -1 --pretty=format:'')
+          TODAY=$(date -u +%Y-%m-%d)
+          HASH=$(git log -1 --pretty=format:'%h')
+          CHANGED=false
+
+          # Log scripts/workflows changes to decisions.md
+          for FILE in $FILES; do
+            case "$FILE" in
+              scripts/*|.github/workflows/*)
+                BASENAME=$(basename "$FILE")
+                printf '\n### DEC-AUTO-%s — %s tillagd/ändrad\n**Datum:** %s\n**Beslut:** Automatiskt loggad förändring\n**Påverkan:** %s committat till main\n' \
+                  "$TODAY" "$BASENAME" "$TODAY" "$FILE" >> project_memory/decisions.md
+                CHANGED=true
+                ;;
+            esac
+          done
+
+          # Log index.html changes to decisions.md
+          if echo "$FILES" | grep -q "^index.html$"; then
+            printf '\n### CHANGELOG-%s — index.html\n**Datum:** %s\n**Commit:** %s\n**Ändring:** %s\n' \
+              "$TODAY" "$TODAY" "$HASH" "$MSG" >> project_memory/decisions.md
+            CHANGED=true
+          fi
+
+          if [ "$CHANGED" = "false" ]; then
+            echo "No relevant files changed"
+            exit 0
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git diff --quiet && exit 0
-          git add project_memory/decisions.md state/work_queue.md
-          git commit -m "docs: auto-update project_memory $(date -u +%Y-%m-%d)"
+          git add project_memory/decisions.md
+          git commit -m "docs: auto-update project_memory $TODAY"
           git push
