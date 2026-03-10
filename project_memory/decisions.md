@@ -84,3 +84,14 @@
 **Alternativ övervägda:** Behålla context/ (funktionellt men flackt)
 **Motivering:** Tydligare separation: governance (oföränderligt), state (uppdateras varje session), project_memory (kumulativt). Lättare för Claude att veta vilken fil som ska uppdateras när.
 **Påverkan:** Boot-sekvensen fetchar nu 5 filer (governance + 2 state + 2 memory) istället för 4.
+
+---
+
+### DEC-009 — Framtida arkitektur: Stateful backend
+**Datum:** 2026-03-10
+**Beslut:** Noterat som framtida uppgradering — ej implementerat
+**Alternativ övervägda:** Nuvarande GitHub-as-memory (implementerat)
+**Motivering:** Nuvarande arkitektur når ~85-90% persistent memory för single-user. De sista 10-15% kräver stateful backend:
+- Supabase (PostgreSQL + Auth + Realtime) — watchlist, trades, state
+- Pinecone (Vector DB) — semantisk sökning i chatthistorik
+- Vercel (Edge Functions) — API-proxy, cron, webhook-mottagare
