@@ -38,6 +38,19 @@
 **Prioritet:** LOW
 **Beskrivning:** GLDD visade stale Polygon data vid tidigare session. Verifiera att 4H bars laddas korrekt.
 
+### INFRA-003 — Migrera till stateful backend
+**Prioritet:** MAX
+**Beskrivning:** Migrera från filbaserat minneslager (~85%) till Supabase + Vercel + Pinecone (~95-98%). Fullständig buildplan i state/session_handoff.md.
+**Fas 1:** Supabase — tabeller (watchlist, portfolio, observations, sessions) + index.html-migration
+**Fas 2:** Vercel — API-routes (/api/regime, /api/watchlist, /api/state)
+**Fas 3:** Pinecone — embedda session_handoff + decisions, semantisk sökning
+**Fas 4:** Boot-sekvens uppgradering (GET /api/state → JSON)
+**Beroenden:** Gustav skapar Supabase-projekt och ger URL + nyckel
+
+### INFRA-004 — Fixa update-docs.yml PAT_TOKEN
+**Prioritet:** LOW (backlog)
+**Beskrivning:** update-docs.yml checkout failar pga saknad/ogiltig PAT_TOKEN secret. Blockar inte annat arbete.
+
 ### WQ-007 — OMXS30/VSTOXX expansion
 **Prioritet:** LOW (framtida)
 **Beskrivning:** Expandera metodologi till europeisk börs. OMXS30, VSTOXX, Atlas Copco, Saab.
