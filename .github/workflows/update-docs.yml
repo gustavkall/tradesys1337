@@ -7,8 +7,7 @@ on:
 
 jobs:
   update-docs:
-    # Loop protection: skip if this is our own auto-commit
-    if: "!startsWith(github.event.head_commit.message, 'docs: auto-update')"
+    # Loop protection moved to commit step
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -93,6 +92,12 @@ ENTRY
 
       - name: Commit and push
         run: |
+          # Loop protection: skip if triggered by our own commit
+          MSG=$(git log -1 --pretty=format:'%s')
+          if echo "$MSG" | grep -q "^docs: auto-update"; then
+            echo "Skipping — triggered by auto-update commit"
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git diff --quiet && exit 0
