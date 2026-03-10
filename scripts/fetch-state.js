@@ -33,11 +33,19 @@ function f(n, d = 2) { return n != null ? n.toFixed(d) : '—'; }
 function fPct(n) { return n != null ? (n >= 0 ? '+' : '') + f(n) + '%' : '—'; }
 
 async function main() {
-  const [spy, iwm, hyg] = await Promise.all([
-    prev('SPY'),
-    prev('IWM'),
-    prev('HYG'),
-  ]);
+  console.log('POLYGON_KEY set:', !!KEY, 'length:', KEY.length);
+  let spy, iwm, hyg;
+  try {
+    [spy, iwm, hyg] = await Promise.all([
+      prev('SPY'),
+      prev('IWM'),
+      prev('HYG'),
+    ]);
+    console.log('SPY result:', JSON.stringify(spy).substring(0, 100));
+  } catch (e) {
+    console.error('Fetch error:', e.message);
+    process.exit(1);
+  }
 
   if (!spy) { console.error('Could not fetch SPY data'); process.exit(1); }
 
