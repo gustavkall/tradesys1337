@@ -48,6 +48,22 @@ jobs:
 
           echo "decisions_updated=$UPDATED" >> $GITHUB_ENV
 
+      - name: Log index.html changes to decisions.md
+        run: |
+          FILES="${{ steps.changed.outputs.files }}"
+          if echo "$FILES" | grep -q "^index.html$"; then
+            TODAY=$(date -u +%Y-%m-%d)
+            HASH=$(git log -1 --pretty=format:'%h')
+            MSG=$(git log -1 --pretty=format:'%s')
+            cat >> project_memory/decisions.md << ENTRY
+
+### CHANGELOG-${TODAY} — index.html
+**Datum:** ${TODAY}
+**Commit:** ${HASH}
+**Ändring:** ${MSG}
+ENTRY
+          fi
+
       - name: Update work_queue.md if state or index.html changed
         run: |
           FILES="${{ steps.changed.outputs.files }}"
