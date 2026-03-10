@@ -95,3 +95,8 @@
 - Supabase (PostgreSQL + Auth + Realtime) — watchlist, trades, state
 - Pinecone (Vector DB) — semantisk sökning i chatthistorik
 - Vercel (Edge Functions) — API-proxy, cron, webhook-mottagare
+
+### DEC-AUTO-2026-03-10 — update-docs.yml tillagd/ändrad
+**Datum:** 2026-03-10
+**Beslut:** Automatiskt loggad förändring
+**Påverkan:** .github/workflows/update-docs.yml committat till main
