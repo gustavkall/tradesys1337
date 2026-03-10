@@ -57,3 +57,13 @@
 | INFRA-001 | GitHub + Netlify setup | 2026-03-08 | ✅ Klar |
 | INFRA-002 | Repo-migration context→v2 | 2026-03-08 | ✅ Klar |
 | WQ-002 | Regenerera Alpha Vantage API-nyckel | 2026-03-09 | ✅ Ny nyckel inlagd, fundamentals verifierat |
+
+---
+
+## OBSERVATIONS
+*Marknads- och systeminsikter från aktiva sessioner. Läggs till manuellt av Claude vid sessionslut.*
+
+| Datum | Ticker/Ämne | Observation | Källa |
+|-------|-------------|-------------|-------|
+| 2026-03-08 | NOC | Bipolar score +3, EMA intact. Kandidat vid RISK-ON + VIX <25 | Session |
+| 2026-03-08 | GLDD | Stale Polygon 4H-data verifierad. Kontrollera vid nästa scan | Session |
