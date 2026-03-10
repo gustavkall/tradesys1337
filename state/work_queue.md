@@ -67,3 +67,5 @@
 |-------|-------------|-------------|-------|
 | 2026-03-08 | NOC | Bipolar score +3, EMA intact. Kandidat vid RISK-ON + VIX <25 | Session |
 | 2026-03-08 | GLDD | Stale Polygon 4H-data verifierad. Kontrollera vid nästa scan | Session |
+| 2026-03-10 | Polygon API | I:VIX endpoint kräver uppgraderad plan. Stocks Starter räcker för aktier | Session |
+| 2026-03-10 | GitHub Actions | update-state + update-docs fungerar. POLYGON_KEY secret har fel värde (BUG-007) | Session |

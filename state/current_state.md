@@ -25,11 +25,12 @@
 - Repo-struktur: GitHub + Netlify setup, context/ filer pushade
 - Repo-migration: context/ → governance/state/project_memory/ (denna session)
 - WQ-002: Alpha Vantage API-nyckel regenererad, verifierad 2026-03-09
+- INFRA: GitHub Actions (update-state + update-docs), serve.sh, watchlist sync, deploy-regel 2026-03-10
 
 ---
 
 ## BLOCKERAT
-Inget blockerat.
+- BUG-007: POLYGON_KEY i GitHub Secrets har fel värde (40 tecken istf 32). Korrekt: xs3tq32EjvcQ9nYip5qfNBiu6erPuuVT
 
 ---
 

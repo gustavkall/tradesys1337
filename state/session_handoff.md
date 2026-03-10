@@ -1,22 +1,26 @@
 # TRADESYS — SESSION HANDOFF
-*Skriven: 2026-03-10. Läses automatiskt vid nästa sessionstart.*
+*Skriven: 2026-03-10 (session 2). Läses automatiskt vid nästa sessionstart.*
 
 ---
 
 ## VART VI ÄR
 
-Dashboard v32+ är stabil och deployad på Netlify.
-Persistent memory-infrastruktur byggd och pushad till main idag.
+Dashboard v32+ stabil på Netlify. Persistent memory-infrastruktur byggd.
+GitHub Actions för auto-update av marknadsdata och project_memory fungerar.
+Watchlist sync-knapp live i dashboard.
 
 ---
 
-## VAD SOM BYGGDES IDAG
+## VAD SOM BYGGDES IDAG (SESSION 1 + 2)
 
 | Vad | Fil | Status |
 |-----|-----|--------|
-| GitHub Action — auto-update marknadsdata | .github/workflows/update-state.yml | ✅ Live |
-| GitHub Action — auto-update project_memory | .github/workflows/update-docs.yml | ✅ Live |
-| Watchlist sync till repo | state/watchlist.json + index.html Sync-knapp | ✅ Live |
+| GitHub Action — auto-update marknadsdata | .github/workflows/update-state.yml | ✅ Fungerar via dispatch, schedule |
+| GitHub Action — auto-update project_memory | .github/workflows/update-docs.yml | ✅ Fungerar via push |
+| fetch-state.js — förenklad (Polygon /prev) | scripts/fetch-state.js | ✅ Testad lokalt + Actions |
+| Watchlist sync till repo | index.html Sync-knapp → state/watchlist.json | ✅ Live |
+| serve.sh — lokal utvecklingsserver | serve.sh | ✅ Live |
+| Deploy-regel LOKAL FIRST | governance/system_rules.md | ✅ Live |
 | Observations-sektion | state/work_queue.md | ✅ Live |
 | Changelog i decisions.md | update-docs.yml | ✅ Live |
 | Session handoff i boot-sekvensen | AI_STARTPROMPT.md fil 6 + fråga 6 | ✅ Live |
@@ -24,57 +28,33 @@ Persistent memory-infrastruktur byggd och pushad till main idag.
 
 ---
 
+## KVARSTÅENDE PROBLEM
+
+### POLYGON_KEY i GitHub Secrets — fel värde
+- **Problem:** GitHub secret `POLYGON_KEY` innehåller fel nyckel (40 tecken, ger "Unknown API Key")
+- **Korrekt nyckel:** `xs3tq32EjvcQ9nYip5qfNBiu6erPuuVT` (32 tecken)
+- **Fix:** Gustav uppdaterar secreten manuellt i GitHub → Settings → Secrets → Actions
+- **Verifiering:** Trigga workflow_dispatch efter fix, kolla att steg 4 lyckas
+- **Debug-logging finns kvar i fetch-state.js** — ta bort efter verifierad fix
+
+### VIX och MOVE saknas i auto-update
+- Polygon Stocks Starter har ej tillgång till `I:VIX` (index-data)
+- fetch-state.js hämtar bara SPY, IWM, HYG för nu
+- TODO i filen — lägg till VIX via Alpha Vantage eller planuppgradering
+
+---
+
 ## MARKNADSREGIM VID SESSIONSLUT
 
-| Parameter | Värde | Källa |
+| Parameter | Värde | Datum |
 |-----------|-------|-------|
-| Datum | 2026-03-10 | |
-| VIX | 23.01 | Screenshot 16:37 |
-| VIX daglig rörelse | -9.80% | |
-| SPX | 6,819 | +0.34% |
-| MOVE | 79.75 | -1.87% |
-| HYG | 80.29 | +0.12% |
-| US10Y | 4.115 | +0.32% |
-| Regime | TRANSITION / RISK-OFF LÄTTNAD | |
-| Signal | INGEN TRADE — ej konfirmerat RISK-ON | |
-
----
-
-## BESLUT TAGNA IDAG
-
-- GitHub-as-memory är rätt arkitektur nu (~85-90% persistent memory)
-- Stateful backend (Supabase + Pinecone + Vercel) är nästa nivå — ej nu
-- Netlify behålls tills Vercel-migrering är del av strukturerad uppgradering
-- Alpha Vantage-nyckel regenererad och implementerad
-- Watchlist ska inte lagras i databas — state/watchlist.json räcker
-
----
-
-## HÖGSTA PRIORITET NÄSTA SESSION
-
-### INFRA-003 — Migrera till stateful backend
-
-Gustav har konton på alla plattformar. Bygg i denna ordning:
-
-**Steg 1 — Supabase**
-- Skapa projekt på supabase.com
-- Tabeller: watchlist, portfolio, trades, observations
-- Migrera WL[] och PF[] från localStorage → Supabase
-- Lägg till SUPABASE_URL + SUPABASE_KEY i GitHub Secrets
-
-**Steg 2 — Vercel**
-- Migrera från Netlify → Vercel
-- Lägg till API-routes: /api/regime, /api/watchlist, /api/state
-- Stäng av Netlify efter verifierad deploy
-
-**Steg 3 — Pinecone**
-- Skapa index för chatthistorik
-- Embedda session_handoff.md + decisions.md vid varje push
-- Semantisk sökning tillgänglig i dashboard
-
-**Steg 4 — GitHub Actions uppdateras**
-- fetch-state.js skriver till Supabase istället för current_state.md
-- Boot-sekvensen fetchar från Supabase API istället för raw GitHub
+| SPY close | 678.27 | 2026-03-10 |
+| SPY daglig | +1.78% | 2026-03-10 |
+| IWM daglig | +2.44% | 2026-03-10 |
+| HYG daglig | +0.73% | 2026-03-10 |
+| VIX | 23.01 (manuell screenshot) | 2026-03-10 |
+| Regime | TRANSITION / RISK-OFF LÄTTNAD | 2026-03-10 |
+| Signal | INGEN TRADE — ej konfirmerat RISK-ON | 2026-03-10 |
 
 ---
 
@@ -83,11 +63,12 @@ Gustav har konton på alla plattformar. Bygg i denna ordning:
 | ID | Status | Notering |
 |----|--------|----------|
 | WQ-001 | READY | Verifiera watchlist live — kräver öppen marknad |
-| WQ-002 | ✅ DONE | AV-nyckel regenererad och implementerad |
+| WQ-002 | ✅ DONE | AV-nyckel regenererad |
 | WQ-003 | READY | Bot auto-scan live-test |
 | WQ-004 | READY | Intradag-validering workflow |
 | WQ-005 | PAUSAD | NOC — väntar på RISK-ON + VIX <25 |
-| INFRA-003 | **HÖGSTA PRIORITET** | Stateful backend — se ovan |
+| INFRA-003 | FRAMTIDA | Stateful backend (Supabase + Vercel + Pinecone) |
+| **BUG-007** | **BLOCKAR** | **POLYGON_KEY secret fel värde — fix manuellt** |
 
 ---
 
@@ -95,5 +76,6 @@ Gustav har konton på alla plattformar. Bygg i denna ordning:
 
 1. Fetcha alla 6 boot-filer
 2. Besvara 6 boot-frågor
-3. Bekräfta att GitHub Actions körde korrekt (kolla repo commits)
-4. Starta INFRA-003 — Supabase setup
+3. **Fix BUG-007:** Verifiera att POLYGON_KEY secret är korrekt (trigga workflow_dispatch)
+4. Ta bort debug-logging från fetch-state.js efter verifierad fix
+5. Om marknad öppen: WQ-001 (watchlist live-verifiering)
