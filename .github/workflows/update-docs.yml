@@ -3,6 +3,7 @@ name: Auto-update project memory
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   update-docs:
