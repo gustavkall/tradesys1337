@@ -16,14 +16,16 @@ Fetcha dessa filer i ordning. Om någon misslyckas — stoppa och rapportera.
 3. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/work_queue.md
 4. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/project_memory/architecture.md
 5. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/project_memory/decisions.md
+6. https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/session_handoff.md
 ```
 
-## EFTER BOOT — BESVARA DESSA FEM FRÅGOR
+## EFTER BOOT — BESVARA DESSA FRÅGOR
 1. Vad är detta system?
 2. Vad är nuvarande source of truth?
 3. Vad är senaste deployade state?
 4. Vad är aktivt / pausat / blockerat / nästa?
 5. Vilken exakt uppgift ska fortsättas nu?
+6. Vad hände i senaste sessionen och vad är explicit nästa steg?
 
 ## AUTONOMI
 Gör så mycket som möjligt autonomt.
