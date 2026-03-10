@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '30 21 * * 1-5'  # 21:30 UTC (22:30 CET) Mon-Fri
   workflow_dispatch:
+  push:
+    branches: [main]
 
 jobs:
   update-state:

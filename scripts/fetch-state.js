@@ -1,3 +1,7 @@
+// TODO: Claude Code frågar manuellt om current_state.md vid sessionslut.
+// Fix: session_handoff-workflow ska trigga update-state automatiskt
+// vid push av session_handoff.md — ingen manuell bekräftelse ska krävas.
+
 const fs = require('fs');
 const https = require('https');
 
