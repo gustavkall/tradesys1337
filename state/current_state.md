@@ -6,7 +6,7 @@
 ## SYSTEMSTATUS
 | Parameter | Värde |
 |-----------|-------|
-| Datum | 2026-03-10 |
+| Datum | 2026-03-12 |
 | Dashboard version | v32+ |
 | Repo | github.com/gustavkall/tradesys1337 |
 | Live URL | https://tradesys1337.netlify.app |
@@ -26,11 +26,13 @@
 - Repo-migration: context/ → governance/state/project_memory/ (denna session)
 - WQ-002: Alpha Vantage API-nyckel regenererad, verifierad 2026-03-09
 - INFRA: GitHub Actions (update-state + update-docs), serve.sh, watchlist sync, deploy-regel 2026-03-10
+- BUG-007: POLYGON_KEY fixad i GitHub Secrets, .env + .gitignore tillagda 2026-03-12
+- CLAUDE.md med session boot + handoff-protokoll 2026-03-12
 
 ---
 
 ## BLOCKERAT
-- BUG-007: POLYGON_KEY i GitHub Secrets har fel värde (40 tecken istf 32). Korrekt: xs3tq32EjvcQ9nYip5qfNBiu6erPuuVT
+Inga blockers.
 
 ---
 
@@ -43,14 +45,14 @@
 ## MARKNADSREGIM (SENAST KÄNT)
 | Parameter | Värde | Datum |
 |-----------|-------|-------|
-| SPY close | 678.27 | 2026-03-10 |
-| SPY daglig | +1.78% | 2026-03-10 |
-| IWM close | 253.62 | 2026-03-10 |
-| IWM daglig | +2.44% | 2026-03-10 |
-| HYG close | 80.17 | 2026-03-10 |
-| HYG daglig | +0.73% | 2026-03-10 |
-| VIX | — (kräver plan-uppgradering) | 2026-03-10 |
-| Signal | — | 2026-03-10 |
+| SPY close | 676.33 | 2026-03-12 |
+| SPY daglig | -0.18% | 2026-03-12 |
+| IWM close | 252.85 | 2026-03-12 |
+| IWM daglig | +0.20% | 2026-03-12 |
+| HYG close | 79.86 | 2026-03-12 |
+| HYG daglig | -0.16% | 2026-03-12 |
+| VIX | — (kräver plan-uppgradering) | 2026-03-12 |
+| Signal | — | 2026-03-12 |
 ---
 
 ## API-STATUS

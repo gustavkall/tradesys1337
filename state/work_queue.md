@@ -70,6 +70,7 @@
 | INFRA-001 | GitHub + Netlify setup | 2026-03-08 | ✅ Klar |
 | INFRA-002 | Repo-migration context→v2 | 2026-03-08 | ✅ Klar |
 | WQ-002 | Regenerera Alpha Vantage API-nyckel | 2026-03-09 | ✅ Ny nyckel inlagd, fundamentals verifierat |
+| BUG-007 | POLYGON_KEY i GitHub Secrets fixad | 2026-03-12 | ✅ Uppdaterad + lokal .env skapad |
 
 ---
 
@@ -82,3 +83,4 @@
 | 2026-03-08 | GLDD | Stale Polygon 4H-data verifierad. Kontrollera vid nästa scan | Session |
 | 2026-03-10 | Polygon API | I:VIX endpoint kräver uppgraderad plan. Stocks Starter räcker för aktier | Session |
 | 2026-03-10 | GitHub Actions | update-state + update-docs fungerar. POLYGON_KEY secret har fel värde (BUG-007) | Session |
+| 2026-03-12 | BUG-007 | POLYGON_KEY fixad i GitHub Secrets. Verifierad lokalt med fetch-state.js | Session |
