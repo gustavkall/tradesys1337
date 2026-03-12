@@ -110,3 +110,13 @@
 **Datum:** 2026-03-10
 **Beslut:** Automatiskt loggad förändring
 **Påverkan:** scripts/fetch-state.js committat till main
+
+### DEC-AUTO-2026-03-12 — supabase-schema.sql tillagd/ändrad
+**Datum:** 2026-03-12
+**Beslut:** Automatiskt loggad förändring
+**Påverkan:** scripts/supabase-schema.sql committat till main
+
+### CHANGELOG-2026-03-12 — index.html
+**Datum:** 2026-03-12
+**Commit:** 4e6a67b
+**Ändring:** feat: INFRA-003 Fas 1 Supabase integration
