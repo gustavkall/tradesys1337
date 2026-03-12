@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TRADESYS v5</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#080c10;--bg2:#0d1117;--bg3:#111820;--border:#1e2a38;--accent:#00d4ff;--green:#00e676;--red:#ff3d57;--orange:#ffaa00;--muted:#4a5a6a;--text:#c8d8e8;--bright:#eaf4ff;}
@@ -181,6 +182,12 @@ td:nth-child(2){text-align:left;color:var(--muted);font-size:10px;}
   <input type="password" id="av-keyinput" placeholder="Ange AV-nyckel..." style="width:160px;font-family:monospace"/>
   <button class="bsm" onclick="saveAVKey()">SPARA</button>
   <span id="av-key-status" style="font-size:10px;color:var(--muted);">--</span>
+  <span style="color:var(--border);margin:0 8px">|</span>
+  <label>SUPABASE:</label>
+  <input type="text" id="sb-url" placeholder="https://xxx.supabase.co" style="width:200px"/>
+  <input type="password" id="sb-anonkey" placeholder="anon key" style="width:120px"/>
+  <button class="bsm" onclick="saveSB()">SPARA</button>
+  <span id="sb-status" style="font-size:10px;color:var(--muted);">--</span>
 </div>
 <div class="main">
   <!-- VIX SPIKE BANNER — visas när VIX rör sig >10% på en dag -->
@@ -488,6 +495,107 @@ const RELPAIRS=[
   {a:'XLV',b:'SPY',l:'Healthcare vs SPX'},{a:'HYG',b:'LQD',l:'HY/IG Kredit'},
   {a:'IWM',b:'SPY',l:'Small/Large Cap'},{a:'TLT',b:'SHY',l:'Bond 20Y/2Y'},
 ];
+
+// ---- SUPABASE ----
+const SB_URL=localStorage.getItem('tradesys_sb_url')||'';
+const SB_KEY=localStorage.getItem('tradesys_sb_key')||'';
+let SB=null;
+if(SB_URL&&SB_KEY){
+  try{SB=supabase.createClient(SB_URL,SB_KEY);dbg('Supabase connected: '+SB_URL.substring(0,30)+'...');}
+  catch(e){dbg('Supabase init error: '+e.message);}
+}
+
+async function sbSaveWL(){
+  if(!SB)return;
+  try{
+    await SB.from('watchlist').delete().neq('id',0);
+    if(WL.length){
+      const rows=WL.map(w=>({ticker:w.t,name:w.n,stop:w.stop||0,up:w.up||0}));
+      const{error}=await SB.from('watchlist').insert(rows);
+      if(error)throw error;
+    }
+    dbg('SB: WL saved ('+WL.length+' rows)');
+  }catch(e){dbg('SB saveWL error: '+e.message);}
+}
+
+async function sbLoadWL(){
+  if(!SB)return false;
+  try{
+    const{data,error}=await SB.from('watchlist').select('*').order('id');
+    if(error)throw error;
+    if(data&&data.length>0){
+      WL=data.map(r=>({t:r.ticker,n:r.name,stop:Number(r.stop)||0,up:Number(r.up)||0}));
+      dbg('SB: WL loaded ('+WL.length+' rows)');
+      return true;
+    }
+  }catch(e){dbg('SB loadWL error: '+e.message);}
+  return false;
+}
+
+async function sbSavePF(){
+  if(!SB)return;
+  try{
+    await SB.from('portfolio').delete().neq('id',0);
+    if(PF.length){
+      const rows=PF.map(p=>({ticker:p.t,name:p.n,buy_price:p.b||0,stop:p.stop||0,up:p.up||0,currency:p.currency||'USD'}));
+      const{error}=await SB.from('portfolio').insert(rows);
+      if(error)throw error;
+    }
+    dbg('SB: PF saved ('+PF.length+' rows)');
+  }catch(e){dbg('SB savePF error: '+e.message);}
+}
+
+async function sbLoadPF(){
+  if(!SB)return false;
+  try{
+    const{data,error}=await SB.from('portfolio').select('*').order('id');
+    if(error)throw error;
+    if(data&&data.length>0){
+      PF=data.map(r=>({t:r.ticker,n:r.name,b:Number(r.buy_price)||0,stop:Number(r.stop)||0,up:Number(r.up)||0,currency:r.currency||'USD'}));
+      dbg('SB: PF loaded ('+PF.length+' rows)');
+      return true;
+    }
+  }catch(e){dbg('SB loadPF error: '+e.message);}
+  return false;
+}
+
+async function sbSaveTradeLog(){
+  if(!SB)return;
+  try{
+    await SB.from('trade_log').delete().neq('id',0);
+    if(TRADE_LOG.length){
+      const rows=TRADE_LOG.map(t=>({
+        id:t.id,ticker:t.ticker,type:t.type,entry:t.entry,stop:t.stop,t1:t.t1,
+        score:t.score,pearson_r:t.pearsonR,regime:t.regime,note:t.note,
+        rr:t.rr,date:t.date,status:t.status,exit_price:t.exitPrice,
+        outcome:t.outcome,pnl_pct:t.pnlPct
+      }));
+      const{error}=await SB.from('trade_log').insert(rows);
+      if(error)throw error;
+    }
+    dbg('SB: TRADE_LOG saved ('+TRADE_LOG.length+' rows)');
+  }catch(e){dbg('SB saveTradeLog error: '+e.message);}
+}
+
+async function sbLoadTradeLog(){
+  if(!SB)return false;
+  try{
+    const{data,error}=await SB.from('trade_log').select('*').order('id',{ascending:false});
+    if(error)throw error;
+    if(data&&data.length>0){
+      TRADE_LOG=data.map(r=>({
+        id:r.id,ticker:r.ticker,type:r.type,entry:Number(r.entry),stop:Number(r.stop),
+        t1:Number(r.t1),score:r.score,pearsonR:r.pearson_r?Number(r.pearson_r):null,
+        regime:r.regime,note:r.note,rr:Number(r.rr),date:r.date,status:r.status,
+        exitPrice:r.exit_price?Number(r.exit_price):null,outcome:r.outcome,
+        pnlPct:r.pnl_pct?Number(r.pnl_pct):null
+      }));
+      dbg('SB: TRADE_LOG loaded ('+TRADE_LOG.length+' rows)');
+      return true;
+    }
+  }catch(e){dbg('SB loadTradeLog error: '+e.message);}
+  return false;
+}
 
 // ---- HELPERS ----
 function dbg(m){dbLines.unshift('['+new Date().toLocaleTimeString()+'] '+m);if(dbLines.length>200)dbLines.pop();const e=document.getElementById('dblog');if(e)e.textContent=dbLines.join('\n');}
@@ -1502,7 +1610,7 @@ function attachSort(){
 }
 
 // ---- ADD/REMOVE ----
-function saveWL(){try{localStorage.setItem('tradesys_wl',JSON.stringify(WL));}catch(e){}}
+function saveWL(){try{localStorage.setItem('tradesys_wl',JSON.stringify(WL));}catch(e){}sbSaveWL();}
 function addWL(){const t=document.getElementById('wl-t').value.trim().toUpperCase();const stop=parseFloat(document.getElementById('wl-stop').value)||0;const up=parseFloat(document.getElementById('wl-up').value)||0;if(!t)return;WL.push({t,n:t,stop,up});saveWL();document.getElementById('wl-t').value='';loadWatchlist();}
 function delWL(i){WL.splice(i,1);saveWL();loadWatchlist();}
 
@@ -1546,12 +1654,13 @@ async function syncWLToGitHub(){
   }finally{btn.disabled=false;}
 }
 
-// ---- LOAD WL FROM REPO (startup fallback) ----
+// ---- LOAD WL/PF FROM SUPABASE → localStorage → REPO (startup) ----
 async function loadWLFromRepo(){
-  // Local wins: om WL redan modifierats (sparad i localStorage) → skip
+  // Priority: Supabase > localStorage > GitHub repo > hardcoded defaults
+  if(await sbLoadWL())return;
   try{
     const saved=localStorage.getItem('tradesys_wl');
-    if(saved){WL=JSON.parse(saved);return;}
+    if(saved){WL=JSON.parse(saved);dbg('WL loaded from localStorage');return;}
   }catch(e){}
   try{
     const r=await fetch('https://raw.githubusercontent.com/gustavkall/tradesys1337/main/state/watchlist.json');
@@ -1561,9 +1670,17 @@ async function loadWLFromRepo(){
     }
   }catch(e){dbg('WL repo fetch failed: '+e.message);}
 }
+async function loadPFFromStore(){
+  if(await sbLoadPF())return;
+  try{
+    const saved=localStorage.getItem('tradesys_pf');
+    if(saved){PF=JSON.parse(saved);dbg('PF loaded from localStorage');}
+  }catch(e){}
+}
 
-function addPF(){const t=document.getElementById('pf-t').value.trim().toUpperCase();const b=parseFloat(document.getElementById('pf-b').value)||0;const stop=parseFloat(document.getElementById('pf-stop').value)||0;const up=parseFloat(document.getElementById('pf-up').value)||0;if(!t)return;PF.push({t,n:t,b,stop,up});document.getElementById('pf-t').value='';loadPortfolio();}
-function delPF(i){PF.splice(i,1);loadPortfolio();}
+function savePF(){try{localStorage.setItem('tradesys_pf',JSON.stringify(PF));}catch(e){}sbSavePF();}
+function addPF(){const t=document.getElementById('pf-t').value.trim().toUpperCase();const b=parseFloat(document.getElementById('pf-b').value)||0;const stop=parseFloat(document.getElementById('pf-stop').value)||0;const up=parseFloat(document.getElementById('pf-up').value)||0;if(!t)return;PF.push({t,n:t,b,stop,up});savePF();document.getElementById('pf-t').value='';loadPortfolio();}
+function delPF(i){PF.splice(i,1);savePF();loadPortfolio();}
 function addSE(){const t=document.getElementById('se-t').value.trim().toUpperCase();const n=document.getElementById('se-n').value.trim()||t;if(!t)return;SECTORS.push({t,n});document.getElementById('se-t').value='';loadSectors();}
 function delSE(i){SECTORS.splice(i,1);loadSectors();}
 ['wl-t','pf-t','se-t'].forEach(id=>{
@@ -1644,11 +1761,13 @@ function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 let TRADE_LOG=[];
 const LOGG_KEY='tradesys_tradelog';
 
-function loadTradeLog(){
+async function loadTradeLog(){
+  if(await sbLoadTradeLog())return;
   try{const d=localStorage.getItem(LOGG_KEY);if(d)TRADE_LOG=JSON.parse(d);}catch(e){}
 }
 function saveTradeLog(){
   try{localStorage.setItem(LOGG_KEY,JSON.stringify(TRADE_LOG));}catch(e){}
+  sbSaveTradeLog();
 }
 
 function logTradeOpen(){
@@ -2399,6 +2518,25 @@ function loadAVKey(){
   }
 }
 
+// ─── SUPABASE — KEY MANAGEMENT ──────────────────────────────────────────
+function saveSB(){
+  const url=document.getElementById('sb-url').value.trim();
+  const key=document.getElementById('sb-anonkey').value.trim();
+  if(!url||!key){document.getElementById('sb-status').textContent='⚠ Ange URL + key';document.getElementById('sb-status').style.color='var(--red)';return;}
+  localStorage.setItem('tradesys_sb_url',url);
+  localStorage.setItem('tradesys_sb_key',key);
+  try{SB=supabase.createClient(url,key);document.getElementById('sb-status').textContent='✓ Supabase sparad';document.getElementById('sb-status').style.color='var(--green)';document.getElementById('sb-url').value='';document.getElementById('sb-anonkey').value='';document.getElementById('sb-url').placeholder=url.substring(0,30)+'...';document.getElementById('sb-anonkey').placeholder='●●●●'+key.slice(-4);}catch(e){document.getElementById('sb-status').textContent='Fel: '+e.message;document.getElementById('sb-status').style.color='var(--red)';}
+}
+function loadSB(){
+  const url=localStorage.getItem('tradesys_sb_url');
+  const key=localStorage.getItem('tradesys_sb_key');
+  if(url&&key){
+    const el=document.getElementById('sb-url');if(el)el.placeholder=url.substring(0,30)+'...';
+    const el2=document.getElementById('sb-anonkey');if(el2)el2.placeholder='●●●●'+key.slice(-4);
+    const st=document.getElementById('sb-status');if(st){st.textContent='✓ Ansluten';st.style.color='var(--green)';}
+  }
+}
+
 async function avFetch(fn, ticker){
   if(!AV_KEY) return null;
   const cacheKey=fn+'_'+ticker;
@@ -2656,13 +2794,15 @@ document.getElementById('apikey').value=KEY;
 loadTradeLog();
 loadNotes();
 botLoad();
-window.addEventListener('load',function(){
+window.addEventListener('load',async function(){
   try{const saved=localStorage.getItem('tradesys_key');if(saved&&saved!==KEY){KEY=saved;document.getElementById('apikey').value=KEY;}}catch(e){}
+  caLoadKey();
+  loadAVKey();
+  loadSB();
+  await loadPFFromStore();
   if(KEY&&KEY.length>10){
     loadAll();
     if(document.getElementById('ar').checked)timer=setInterval(loadAll,60000);
-  caLoadKey();
-  loadAVKey();
   } else {
     setS('Ange API-nyckel och tryck SPARA & LADDA',false);
   }
