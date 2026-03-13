@@ -45,14 +45,14 @@ Inga blockers.
 ## MARKNADSREGIM (SENAST KÄNT)
 | Parameter | Värde | Datum |
 |-----------|-------|-------|
-| SPY close | 676.33 | 2026-03-12 |
-| SPY daglig | -0.18% | 2026-03-12 |
-| IWM close | 252.85 | 2026-03-12 |
-| IWM daglig | +0.20% | 2026-03-12 |
-| HYG close | 79.86 | 2026-03-12 |
-| HYG daglig | -0.16% | 2026-03-12 |
-| VIX | — (kräver plan-uppgradering) | 2026-03-12 |
-| Signal | — | 2026-03-12 |
+| SPY close | 666.06 | 2026-03-13 |
+| SPY daglig | -0.76% | 2026-03-13 |
+| IWM close | 247.41 | 2026-03-13 |
+| IWM daglig | -0.61% | 2026-03-13 |
+| HYG close | 79.35 | 2026-03-13 |
+| HYG daglig | -0.50% | 2026-03-13 |
+| VIX | — (kräver plan-uppgradering) | 2026-03-13 |
+| Signal | — | 2026-03-13 |
 ---
 
 ## API-STATUS
